@@ -1,0 +1,32 @@
+syntax = "proto3";
+
+package notification;
+
+service NotificationService {
+  rpc SendEmail (SendEmailRequest) returns (SendEmailResponse) {}
+  rpc SendBookingConfirmation (SendBookingConfirmationRequest) returns (SendEmailResponse) {}
+}
+
+message SendEmailRequest {
+  string to = 1;
+  string subject = 2;
+  string content = 3;
+}
+
+message SendBookingConfirmationRequest {
+  string email = 1;
+  BookingDetails bookingDetails = 2;
+}
+
+message BookingDetails {
+  string id = 1;
+  string event = 2;
+  string date = 3;
+  string seats = 4;
+}
+
+message SendEmailResponse {
+  bool success = 1;
+  string messageId = 2;
+  string error = 3;
+}

@@ -1,0 +1,90 @@
+version: '3.8'
+
+services:
+  auth-service:
+    container_name: auth-service
+    hostname: auth-service
+    build:
+      context: ./services/auth-service
+      dockerfile: Dockerfile
+    ports:
+      - "50051:50051"
+    volumes:
+      - ./services/auth-service:/usr/src/app
+    environment:
+      - NODE_ENV=development
+      - DB_HOST=postgres-auth
+      - DB_PORT=5432
+      - DB_USERNAME=postgres
+      - DB_PASSWORD=postgres
+      - DB_NAME=auth_db
+    networks:
+      - test-network
+    depends_on:
+      - postgres-auth
+
+  notification-service:
+    container_name: notification-service
+    hostname: notification-service
+    build:
+      context: ./services/notification-service
+      dockerfile: Dockerfile
+    ports:
+      - "50052:50052"
+    volumes:
+      - ./services/notification-service:/usr/src/app
+    environment:
+      - NODE_ENV=development
+      - SMTP_HOST=smtp.gmail.com
+      - SMTP_PORT=587
+      - SMTP_USER=${SMTP_USER}
+      - SMTP_PASS=${SMTP_PASS}
+    networks:
+      - test-network
+
+  api-gateway:
+    container_name: api-gateway
+    hostname: api-gateway
+    build:
+      context: ./services/api-gateway
+      dockerfile: Dockerfile
+    ports:
+      - "3005:3000"
+    volumes:
+      - ./services/api-gateway:/usr/src/app
+    environment:
+      - NODE_ENV=development
+      - AUTH_SERVICE_URL=auth-service:50051
+      - NOTIFICATION_SERVICE_URL=notification-service:50052
+    networks:
+      - test-network
+    depends_on:
+      - auth-service
+      - notification-service
+
+  postgres-auth:
+    container_name: postgres-auth
+    hostname: postgres-auth
+    image: postgres:15-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=auth_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - test-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+networks:
+  test-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
