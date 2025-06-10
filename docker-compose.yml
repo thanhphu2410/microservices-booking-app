@@ -18,6 +18,7 @@ services:
       - DB_USERNAME=postgres
       - DB_PASSWORD=postgres
       - DB_NAME=auth_db
+      - RABBITMQ_URL=amqp://rabbitmq:5672
     networks:
       - test-network
     depends_on:
@@ -39,8 +40,11 @@ services:
       - SMTP_PORT=587
       - SMTP_USER=${SMTP_USER}
       - SMTP_PASS=${SMTP_PASS}
+      - RABBITMQ_URL=amqp://rabbitmq:5672
     networks:
       - test-network
+    depends_on:
+      - rabbitmq
 
   api-gateway:
     container_name: api-gateway
@@ -56,6 +60,7 @@ services:
       - NODE_ENV=development
       - AUTH_SERVICE_URL=auth-service:50051
       - NOTIFICATION_SERVICE_URL=notification-service:50052
+      - RABBITMQ_URL=amqp://rabbitmq:5672
     networks:
       - test-network
     depends_on:
@@ -82,9 +87,30 @@ services:
       timeout: 5s
       retries: 5
 
+  rabbitmq:
+    container_name: rabbitmq
+    hostname: rabbitmq
+    image: rabbitmq:3-management-alpine
+    ports:
+      - "5672:5672"   # AMQP protocol port
+      - "15672:15672" # Management UI port
+    environment:
+      - RABBITMQ_DEFAULT_USER=guest
+      - RABBITMQ_DEFAULT_PASS=guest
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - test-network
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
 networks:
   test-network:
     driver: bridge
 
 volumes:
   postgres_data:
+  rabbitmq_data:

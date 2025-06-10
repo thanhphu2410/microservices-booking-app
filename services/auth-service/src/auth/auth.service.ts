@@ -1,9 +1,11 @@
-import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, ConflictException, Inject } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from '../users/entities/user.entity';
 import * as bcrypt from 'bcrypt';
+import { ClientProxy } from '@nestjs/microservices';
+import { lastValueFrom } from 'rxjs';
 
 @Injectable()
 export class AuthService {
@@ -11,6 +13,7 @@ export class AuthService {
     @InjectRepository(User)
     private usersRepository: Repository<User>,
     private jwtService: JwtService,
+    @Inject('NOTIFICATION_SERVICE') private notificationClient: ClientProxy,
   ) {}
 
   async register(registerDto: {
@@ -34,6 +37,16 @@ export class AuthService {
 
     await this.usersRepository.save(user);
     const { password, ...result } = user;
+
+    // Send message to RabbitMQ
+    this.notificationClient.emit('user_registered', {
+      userId: user.id,
+      email: user.email,
+      fullName: user.fullName,
+      event: 'user_registered',
+      timestamp: new Date().toISOString(),
+    })
+    
     return result;
   }
 

@@ -1,14 +1,9 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
-import { UserConsumer } from './consumers/user.consumer';
-import { NotificationModule } from './notification/notification.module';
-import { ClientsModule, Transport } from '@nestjs/microservices';
+import { ClientsModule } from '@nestjs/microservices';
+import { RmqOptions, Transport } from '@nestjs/microservices';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({
-      isGlobal: true,
-    }),
     ClientsModule.register([
       {
         name: 'NOTIFICATION_SERVICE',
@@ -22,9 +17,7 @@ import { ClientsModule, Transport } from '@nestjs/microservices';
         },
       },
     ]),
-    NotificationModule,
   ],
-  controllers: [UserConsumer],
-  providers: [],
+  exports: [ClientsModule],
 })
-export class AppModule {}
+export class RabbitMQModule {}
