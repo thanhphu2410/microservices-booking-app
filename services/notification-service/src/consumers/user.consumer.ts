@@ -1,5 +1,7 @@
 import { Controller, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { EventPattern, Payload } from '@nestjs/microservices';
+import { EmailService } from '../notification/email.service';
 
 interface UserRegisteredMessage {
   userId: string;
@@ -13,6 +15,11 @@ interface UserRegisteredMessage {
 export class UserConsumer {
   private readonly logger = new Logger(UserConsumer.name);
 
+  constructor(
+    private readonly configService: ConfigService,
+    private readonly emailService: EmailService,
+  ) {}
+
   @EventPattern('user_registered')
   async handleUserRegistered(@Payload() data: UserRegisteredMessage) {
     try {
@@ -24,8 +31,11 @@ export class UserConsumer {
         registeredAt: data.timestamp
       });
 
+      // Send welcome email
+      await this.emailService.sendWelcomeEmail(data.email, data.fullName);
+      this.logger.log(`Welcome email sent successfully to ${data.email}`);
+
       // Here you could add more handling logic like:
-      // - Send welcome email
       // - Send SMS notification
       // - Update analytics
       // - etc.

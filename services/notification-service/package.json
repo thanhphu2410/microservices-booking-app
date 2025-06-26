@@ -20,6 +20,7 @@
     "test:e2e": "jest --config ./test/jest-e2e.json"
   },
   "dependencies": {
+    "@aws-sdk/client-ses": "^3.835.0",
     "@grpc/grpc-js": "^1.13.4",
     "@grpc/proto-loader": "^0.7.15",
     "@nestjs/common": "^11.0.0",
@@ -28,9 +29,9 @@
     "@nestjs/microservices": "^11.0.0",
     "@nestjs/platform-express": "^11.0.0",
     "@nestjs/swagger": "^11.2.0",
+    "@types/amqplib": "^0.10.4",
     "@types/nodemailer": "^6.4.17",
     "amqplib": "^0.10.3",
-    "@types/amqplib": "^0.10.4",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.2",
     "nodemailer": "^7.0.3",

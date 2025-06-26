@@ -4,7 +4,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from '../users/entities/user.entity';
 import * as bcrypt from 'bcrypt';
-import { ClientProxy } from '@nestjs/microservices';
+import { ClientProxy, RpcException } from '@nestjs/microservices';
 import { lastValueFrom } from 'rxjs';
 
 @Injectable()
@@ -26,7 +26,10 @@ export class AuthService {
     });
 
     if (existingUser) {
-      throw new ConflictException('Email already exists');
+      throw new RpcException({
+        message: 'Email already exists',
+        details: 'Email already exists'
+      });
     }
 
     const hashedPassword = await bcrypt.hash(registerDto.password, 10);
