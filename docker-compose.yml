@@ -59,6 +59,7 @@ services:
     environment:
       - NODE_ENV=development
       - AUTH_SERVICE_URL=auth-service:50051
+      - MOVIE_SERVICE_URL=movie-service:50053
       - NOTIFICATION_SERVICE_URL=notification-service:50052
       - RABBITMQ_URL=amqp://rabbitmq:5672
     networks:
@@ -107,6 +108,49 @@ services:
       timeout: 5s
       retries: 5
 
+  movie-service:
+    container_name: movie-service
+    hostname: movie-service
+    build:
+      context: ./services/movie-service
+      dockerfile: Dockerfile
+    ports:
+      - "50053:50053"
+    volumes:
+      - ./services/movie-service:/usr/src/app
+    environment:
+      - NODE_ENV=development
+      - DB_HOST=postgres-movie
+      - DB_PORT=5432
+      - DB_USERNAME=postgres
+      - DB_PASSWORD=postgres
+      - DB_NAME=movie_db
+      - RABBITMQ_URL=amqp://rabbitmq:5672
+    networks:
+      - test-network
+    depends_on:
+      - postgres-movie
+
+  postgres-movie:
+    container_name: postgres-movie
+    hostname: postgres-movie
+    image: postgres:15-alpine
+    ports:
+      - "5434:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=movie_db
+    volumes:
+      - postgres_movie_data:/var/lib/postgresql/data
+    networks:
+      - test-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
 networks:
   test-network:
     driver: bridge
@@ -114,3 +158,4 @@ networks:
 volumes:
   postgres_data:
   rabbitmq_data:
+  postgres_movie_data:

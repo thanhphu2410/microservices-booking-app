@@ -1,0 +1,36 @@
+syntax = "proto3";
+
+package movie;
+
+service MovieService {
+  rpc ListMovies (ListMoviesRequest) returns (ListMoviesResponse) {}
+  rpc SyncData (SyncDataRequest) returns (SyncDataResponse) {}
+}
+
+message SyncDataRequest {
+
+}
+
+message ListMoviesRequest {
+  // Add pagination or filter fields if needed
+}
+
+message Movie {
+  string id = 1;
+  string title = 2;
+  string overview = 3;
+  string releaseDate = 4;
+  string posterPath = 5;
+  string createdAt = 6;
+  string updatedAt = 7;
+}
+
+message ListMoviesResponse {
+  repeated Movie movies = 1;
+}
+
+message SyncDataResponse {
+  bool success = 1;
+  string message = 2;
+  repeated string errors = 3;
+}
