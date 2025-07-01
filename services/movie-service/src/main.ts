@@ -13,9 +13,20 @@ async function bootstrap() {
     transport: Transport.GRPC,
     options: {
       package: 'movie',
-      // protoPath: join(__dirname, './movies/proto/movie.proto'),
       protoPath: join(__dirname, '../src/movies/proto/movie.proto'),
       url: '0.0.0.0:50053',
+    },
+  });
+
+  app.connectMicroservice<MicroserviceOptions>({
+
+    transport: Transport.RMQ,
+    options: {
+      urls: [process.env.RABBITMQ_URL || 'amqp://localhost:5672'],
+      queue: 'movie_sync_queue',
+      queueOptions: {
+        durable: true,
+      },
     },
   });
 

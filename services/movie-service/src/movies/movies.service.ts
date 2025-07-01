@@ -28,7 +28,7 @@ export class MoviesService {
     return movies;
   }
 
-  async syncData() {
+  async syncData(totalCount: number = 500) {
     this.logger.log('Starting data sync from TMDB', this.tmdbApiKey);
 
     if (!this.tmdbApiKey) {
@@ -42,28 +42,31 @@ export class MoviesService {
     try {
       const errors: string[] = [];
       let syncedCount = 0;
+      const pageSize = 20;
+      const totalPages = Math.ceil(totalCount / pageSize);
 
-      // Fetch popular movies from TMDB
-      const popularMovies = await this.fetchPopularMovies();
-
-      if (popularMovies.length === 0) {
-        return {
-          success: false,
-          message: 'No movies found from TMDB API',
-          errors: ['No movies returned from TMDB API'],
-        };
-      }
-
-      // Process each movie
-      for (const tmdbMovie of popularMovies) {
+      for (let page = 1; page <= totalPages; page++) {
+        let moviesPage: TMDBMovie[] = [];
         try {
-          await this.syncMovie(tmdbMovie);
-          syncedCount++;
+          moviesPage = await this.fetchPopularMoviesPage(page);
         } catch (error) {
-          const errorMsg = `Failed to sync movie ${tmdbMovie.title}: ${error.message}`;
+          const errorMsg = `Failed to fetch page ${page} from TMDB: ${error.message}`;
           this.logger.error(errorMsg);
           errors.push(errorMsg);
+          break;
         }
+        for (const tmdbMovie of moviesPage) {
+          if (syncedCount >= totalCount) break;
+          try {
+            await this.syncMovie(tmdbMovie);
+            syncedCount++;
+          } catch (error) {
+            const errorMsg = `Failed to sync movie ${tmdbMovie.title}: ${error.message}`;
+            this.logger.error(errorMsg);
+            errors.push(errorMsg);
+          }
+        }
+        if (syncedCount >= totalCount) break;
       }
 
       this.logger.log(`Successfully synced ${syncedCount} movies`);
@@ -84,7 +87,7 @@ export class MoviesService {
     }
   }
 
-  private async fetchPopularMovies(): Promise<TMDBMovie[]> {
+  private async fetchPopularMoviesPage(page: number): Promise<TMDBMovie[]> {
     try {
       const response = await axios.get<TMDBMoviesResponse>(
         `${this.tmdbBaseUrl}/movie/now_playing`,
@@ -95,16 +98,15 @@ export class MoviesService {
           },
           params: {
             language: 'en-US',
-            page: 1,
+            page,
           },
         }
       );
-
-      this.logger.log(`Fetched ${response.data.results.length} popular movies from TMDB`);
+      this.logger.log(`Fetched page ${page}: ${response.data.results.length} movies`);
       return response.data.results;
     } catch (error) {
-      this.logger.error('Failed to fetch popular movies from TMDB:', error);
-      throw new Error(`TMDB API request failed: ${error.message}`);
+      this.logger.error(`Failed to fetch popular movies from TMDB (page ${page}):`, error);
+      throw new Error(`TMDB API request failed (page ${page}): ${error.message}`);
     }
   }
 
