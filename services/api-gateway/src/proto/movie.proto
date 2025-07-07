@@ -12,7 +12,10 @@ message SyncDataRequest {
 }
 
 message ListMoviesRequest {
-  // Add pagination or filter fields if needed
+  int32 page = 1;
+  int32 limit = 2;
+  string sortBy = 3;
+  string sortOrder = 4;
 }
 
 message Movie {
@@ -21,12 +24,25 @@ message Movie {
   string overview = 3;
   string releaseDate = 4;
   string posterPath = 5;
-  string createdAt = 6;
-  string updatedAt = 7;
+  string backdropPath = 6;
+  double voteAverage = 7;
+  int32 voteCount = 8;
+  string createdAt = 9;
+  string updatedAt = 10;
+}
+
+message PaginationInfo {
+  int32 page = 1;
+  int32 limit = 2;
+  int32 total = 3;
+  int32 totalPages = 4;
+  bool hasNext = 5;
+  bool hasPrev = 6;
 }
 
 message ListMoviesResponse {
   repeated Movie movies = 1;
+  PaginationInfo pagination = 2;
 }
 
 message SyncDataResponse {

@@ -20,6 +20,9 @@ export class Movie {
   @Column({ nullable: true })
   posterPath: string;
 
+  @Column({ nullable: true })
+  backdropPath: string;
+
   @Column({ nullable: true, type: 'decimal', precision: 10, scale: 2 })
   voteAverage: number;
 

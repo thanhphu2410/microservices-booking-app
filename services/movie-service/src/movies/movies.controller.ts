@@ -3,6 +3,8 @@ import { GrpcMethod, RpcException } from '@nestjs/microservices';
 import { Logger } from '@nestjs/common';
 import { MoviesService } from './movies.service';
 import { ClientProxy } from '@nestjs/microservices';
+import { ListMoviesDto } from './dto/list-movies.dto';
+import { ListMoviesResponseDto } from './dto/movie-response.dto';
 
 @Controller()
 export class MoviesController {
@@ -14,12 +16,10 @@ export class MoviesController {
   ) {}
 
   @GrpcMethod('MovieService', 'ListMovies')
-  async listMovies(data: any) {
+  async listMovies(data: ListMoviesDto): Promise<ListMoviesResponseDto> {
     try {
-      this.logger.log('ListMovies called');
-      // Call the service to get movies (stubbed for now)
-      const movies = await this.moviesService.listMovies();
-      return { movies };
+      const result = await this.moviesService.listMovies(data);
+      return result;
     } catch (error) {
       if (error instanceof RpcException) {
         throw error;

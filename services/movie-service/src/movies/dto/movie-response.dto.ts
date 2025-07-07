@@ -4,6 +4,23 @@ export class MovieResponseDto {
   overview?: string;
   releaseDate?: string;
   posterPath?: string;
-  createdAt: Date;
-  updatedAt: Date;
+  backdropPath?: string;
+  voteAverage?: number;
+  voteCount?: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export class PaginationInfoDto {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+  hasNext: boolean;
+  hasPrev: boolean;
+}
+
+export class ListMoviesResponseDto {
+  movies: MovieResponseDto[];
+  pagination: PaginationInfoDto;
 }

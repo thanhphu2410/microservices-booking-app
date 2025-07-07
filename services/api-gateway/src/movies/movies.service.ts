@@ -1,6 +1,6 @@
 import { Injectable, Inject, OnModuleInit } from '@nestjs/common';
 import { ClientGrpc } from '@nestjs/microservices';
-import { MovieGrpcService, ListMoviesResponse, SyncDataResponse } from './interfaces';
+import { MovieGrpcService, ListMoviesResponse, SyncDataResponse, ListMoviesRequest } from './interfaces';
 
 @Injectable()
 export class MoviesService implements OnModuleInit {
@@ -12,8 +12,8 @@ export class MoviesService implements OnModuleInit {
     this.movieService = this.client.getService<MovieGrpcService>('MovieService');
   }
 
-  async listMovies(): Promise<ListMoviesResponse> {
-    return this.movieService.listMovies({});
+  async listMovies(params: ListMoviesRequest = {}): Promise<ListMoviesResponse> {
+    return this.movieService.listMovies(params);
   }
 
   async syncData(): Promise<SyncDataResponse> {

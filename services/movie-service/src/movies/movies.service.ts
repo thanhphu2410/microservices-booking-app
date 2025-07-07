@@ -5,6 +5,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { ConfigService } from '@nestjs/config';
 import axios from 'axios';
 import { TMDBMoviesResponse, TMDBMovie } from './interfaces/tmdb.interface';
+import { ListMoviesDto } from './dto/list-movies.dto';
+import { ListMoviesResponseDto } from './dto/movie-response.dto';
 
 @Injectable()
 export class MoviesService {
@@ -23,9 +25,44 @@ export class MoviesService {
     }
   }
 
-  async listMovies() {
-    const movies = await this.movieRepository.find();
-    return movies;
+  async listMovies(listMoviesDto: ListMoviesDto = {}): Promise<ListMoviesResponseDto> {
+    const { page = 1, limit = 20, sortBy = 'releaseDate', sortOrder = 'DESC' } = listMoviesDto;
+
+    const skip = (page - 1) * limit;
+
+    const [movies, total] = await this.movieRepository.findAndCount({
+      skip,
+      take: limit,
+      order: {
+        [sortBy]: sortOrder,
+      },
+    });
+
+    // Transform the movies to match the proto types
+    const transformedMovies = movies.map(movie => ({
+      id: movie.id,
+      title: movie.title,
+      overview: movie.overview || '',
+      releaseDate: movie.releaseDate || '',
+      posterPath: movie.posterPath || '',
+      backdropPath: movie.backdropPath || '',
+      voteAverage: movie.voteAverage ? parseFloat(movie.voteAverage.toString()) : 0,
+      voteCount: movie.voteCount ? parseInt(movie.voteCount.toString()) : 0,
+      createdAt: movie.createdAt.toISOString(),
+      updatedAt: movie.updatedAt.toISOString(),
+    }));
+
+    return {
+      movies: transformedMovies,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+        hasNext: page < Math.ceil(total / limit),
+        hasPrev: page > 1,
+      },
+    };
   }
 
   async syncData(totalCount: number = 500) {
@@ -121,6 +158,7 @@ export class MoviesService {
       existingMovie.overview = tmdbMovie.overview;
       existingMovie.releaseDate = tmdbMovie.release_date;
       existingMovie.posterPath = tmdbMovie.poster_path;
+      existingMovie.backdropPath = tmdbMovie.backdrop_path;
       existingMovie.voteAverage = tmdbMovie.vote_average;
       existingMovie.voteCount = tmdbMovie.vote_count;
       await this.movieRepository.save(existingMovie);
@@ -133,6 +171,7 @@ export class MoviesService {
         overview: tmdbMovie.overview,
         releaseDate: tmdbMovie.release_date,
         posterPath: tmdbMovie.poster_path,
+        backdropPath: tmdbMovie.backdrop_path,
         voteAverage: tmdbMovie.vote_average,
         voteCount: tmdbMovie.vote_count,
       });

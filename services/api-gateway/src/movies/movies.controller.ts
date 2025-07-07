@@ -1,15 +1,14 @@
-import { Controller, Get, Post, Body } from '@nestjs/common';
+import { Controller, Get, Post, Body, Query } from '@nestjs/common';
 import { MoviesService } from './movies.service';
-import { ListMoviesResponse, SyncDataResponse } from './interfaces';
+import { ListMoviesResponse, SyncDataResponse, ListMoviesRequest } from './interfaces';
 
 @Controller('movies')
 export class MoviesController {
   constructor(private readonly moviesService: MoviesService) {}
 
   @Get()
-  async listMovies(): Promise<ListMoviesResponse> {
-    
-    return this.moviesService.listMovies();
+  async listMovies(@Query() query: ListMoviesRequest): Promise<ListMoviesResponse> {
+    return this.moviesService.listMovies(query);
   }
 
   @Post('/sync-data')
