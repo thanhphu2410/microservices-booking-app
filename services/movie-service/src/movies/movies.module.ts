@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { MoviesService } from './movies.service';
 import { MoviesController } from './movies.controller';
+import { ShowtimesModule } from '../showtimes/showtimes.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Movie } from './entities/movie.entity';
 import { ClientsModule, Transport } from '@nestjs/microservices';
@@ -9,6 +10,7 @@ import { MovieSyncConsumer } from '../consumers/movie-sync.consumer';
 @Module({
   imports: [
     TypeOrmModule.forFeature([Movie]),
+    ShowtimesModule,
     ClientsModule.register([
       {
         name: 'MOVIE_SYNC_SERVICE',

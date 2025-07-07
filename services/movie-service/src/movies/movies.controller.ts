@@ -3,8 +3,7 @@ import { GrpcMethod, RpcException } from '@nestjs/microservices';
 import { Logger } from '@nestjs/common';
 import { MoviesService } from './movies.service';
 import { ClientProxy } from '@nestjs/microservices';
-import { ListMoviesDto } from './dto/list-movies.dto';
-import { ListMoviesResponseDto } from './dto/movie-response.dto';
+import { ListMoviesDto, ListMoviesResponseDto } from './dto';
 
 @Controller()
 export class MoviesController {

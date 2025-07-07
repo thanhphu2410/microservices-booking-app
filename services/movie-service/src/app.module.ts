@@ -1,12 +1,18 @@
 import { Module } from '@nestjs/common';
 import { MoviesModule } from './movies/movies.module';
+import { RoomsModule } from './rooms/rooms.module';
+import { ShowtimesModule } from './showtimes/showtimes.module';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Movie } from './movies/entities/movie.entity';
+import { Room } from './rooms/entities/room.entity';
+import { Showtime } from './showtimes/entities/showtime.entity';
 
 @Module({
   imports: [
     MoviesModule,
+    RoomsModule,
+    ShowtimesModule,
     ConfigModule.forRoot({
       isGlobal: true,
     }),
@@ -17,7 +23,7 @@ import { Movie } from './movies/entities/movie.entity';
       username: process.env.DB_USERNAME || 'postgres',
       password: process.env.DB_PASSWORD || 'postgres',
       database: process.env.DB_NAME || 'movie_db',
-      entities: [Movie],
+      entities: [Movie, Room, Showtime],
       synchronize: process.env.NODE_ENV !== 'production',
     }),
   ],

@@ -1,0 +1,82 @@
+syntax = "proto3";
+
+package room;
+
+service RoomService {
+  rpc CreateRoom (CreateRoomRequest) returns (RoomResponse) {}
+  rpc GetAllRooms (GetAllRoomsRequest) returns (GetAllRoomsResponse) {}
+  rpc GetRoomById (GetRoomByIdRequest) returns (RoomResponse) {}
+  rpc GetActiveRooms (GetActiveRoomsRequest) returns (GetActiveRoomsResponse) {}
+  rpc UpdateRoom (UpdateRoomRequest) returns (RoomResponse) {}
+  rpc DeleteRoom (DeleteRoomRequest) returns (DeleteRoomResponse) {}
+  rpc DeactivateRoom (DeactivateRoomRequest) returns (RoomResponse) {}
+}
+
+enum RoomType {
+  STANDARD = 0;
+  PREMIUM = 1;
+  IMAX = 2;
+  DOLBY = 3;
+}
+
+message CreateRoomRequest {
+  string name = 1;
+  int32 capacity = 2;
+  RoomType type = 3;
+  string description = 4;
+  bool isActive = 5;
+}
+
+message GetAllRoomsRequest {
+}
+
+message GetRoomByIdRequest {
+  string id = 1;
+}
+
+message GetActiveRoomsRequest {
+}
+
+message UpdateRoomRequest {
+  string id = 1;
+  UpdateRoomData updateData = 2;
+}
+
+message UpdateRoomData {
+  string name = 1;
+  int32 capacity = 2;
+  RoomType type = 3;
+  string description = 4;
+  bool isActive = 5;
+}
+
+message DeleteRoomRequest {
+  string id = 1;
+}
+
+message DeactivateRoomRequest {
+  string id = 1;
+}
+
+message RoomResponse {
+  string id = 1;
+  string name = 2;
+  int32 capacity = 3;
+  RoomType type = 4;
+  string description = 5;
+  bool isActive = 6;
+  string createdAt = 7;
+  string updatedAt = 8;
+}
+
+message GetAllRoomsResponse {
+  repeated RoomResponse rooms = 1;
+}
+
+message GetActiveRoomsResponse {
+  repeated RoomResponse rooms = 1;
+}
+
+message DeleteRoomResponse {
+  string message = 1;
+}

@@ -1,4 +1,5 @@
-import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn, OneToMany } from 'typeorm';
+import { Showtime } from '../../showtimes/entities/showtime.entity';
 
 @Entity('movies')
 export class Movie {
@@ -34,4 +35,7 @@ export class Movie {
 
   @UpdateDateColumn()
   updatedAt: Date;
+
+  @OneToMany(() => Showtime, showtime => showtime.movie)
+  showtimes: Showtime[];
 }

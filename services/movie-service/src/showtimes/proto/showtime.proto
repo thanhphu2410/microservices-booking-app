@@ -1,0 +1,113 @@
+syntax = "proto3";
+
+package showtime;
+
+service ShowtimeService {
+  rpc CreateShowtime (CreateShowtimeRequest) returns (ShowtimeResponse) {}
+  rpc GetAllShowtimes (GetAllShowtimesRequest) returns (GetAllShowtimesResponse) {}
+  rpc GetShowtimeById (GetShowtimeByIdRequest) returns (ShowtimeResponse) {}
+  rpc GetUpcomingShowtimes (GetUpcomingShowtimesRequest) returns (GetUpcomingShowtimesResponse) {}
+  rpc UpdateShowtime (UpdateShowtimeRequest) returns (ShowtimeResponse) {}
+  rpc DeleteShowtime (DeleteShowtimeRequest) returns (DeleteShowtimeResponse) {}
+  rpc CancelShowtime (CancelShowtimeRequest) returns (ShowtimeResponse) {}
+  rpc UpdateBookedSeats (UpdateBookedSeatsRequest) returns (ShowtimeResponse) {}
+}
+
+enum ShowtimeStatus {
+  SCHEDULED = 0;
+  ONGOING = 1;
+  COMPLETED = 2;
+  CANCELLED = 3;
+}
+
+message CreateShowtimeRequest {
+  string movieId = 1;
+  string roomId = 2;
+  string startTime = 3;
+  string endTime = 4;
+  double price = 5;
+  ShowtimeStatus status = 6;
+}
+
+message GetAllShowtimesRequest {
+  string movieId = 1;
+  string roomId = 2;
+  ShowtimeStatus status = 3;
+  string startDate = 4;
+  string endDate = 5;
+}
+
+message GetShowtimeByIdRequest {
+  string id = 1;
+}
+
+message GetUpcomingShowtimesRequest {
+}
+
+message UpdateShowtimeRequest {
+  string id = 1;
+  UpdateShowtimeData updateData = 2;
+}
+
+message UpdateShowtimeData {
+  string movieId = 1;
+  string roomId = 2;
+  string startTime = 3;
+  string endTime = 4;
+  double price = 5;
+  ShowtimeStatus status = 6;
+  int32 bookedSeats = 7;
+}
+
+message DeleteShowtimeRequest {
+  string id = 1;
+}
+
+message CancelShowtimeRequest {
+  string id = 1;
+}
+
+message UpdateBookedSeatsRequest {
+  string id = 1;
+  int32 bookedSeats = 2;
+}
+
+message MovieInfo {
+  string id = 1;
+  string title = 2;
+  string posterPath = 3;
+}
+
+message RoomInfo {
+  string id = 1;
+  string name = 2;
+  int32 capacity = 3;
+  string type = 4;
+}
+
+message ShowtimeResponse {
+  string id = 1;
+  string movieId = 2;
+  string roomId = 3;
+  string startTime = 4;
+  string endTime = 5;
+  double price = 6;
+  ShowtimeStatus status = 7;
+  int32 bookedSeats = 8;
+  string createdAt = 9;
+  string updatedAt = 10;
+  MovieInfo movie = 11;
+  RoomInfo room = 12;
+}
+
+message GetAllShowtimesResponse {
+  repeated ShowtimeResponse showtimes = 1;
+}
+
+message GetUpcomingShowtimesResponse {
+  repeated ShowtimeResponse showtimes = 1;
+}
+
+message DeleteShowtimeResponse {
+  string message = 1;
+}

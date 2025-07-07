@@ -7,6 +7,7 @@ import axios from 'axios';
 import { TMDBMoviesResponse, TMDBMovie } from './interfaces/tmdb.interface';
 import { ListMoviesDto } from './dto/list-movies.dto';
 import { ListMoviesResponseDto } from './dto/movie-response.dto';
+import { ShowtimeGenerationService } from '../showtimes/showtime-generation.service';
 
 @Injectable()
 export class MoviesService {
@@ -18,6 +19,7 @@ export class MoviesService {
     @InjectRepository(Movie)
     private movieRepository: Repository<Movie>,
     private configService: ConfigService,
+    private showtimeGenerationService: ShowtimeGenerationService,
   ) {
     this.tmdbApiKey = this.configService.get<string>('TMDB_API_KEY');
     if (!this.tmdbApiKey) {
@@ -65,7 +67,7 @@ export class MoviesService {
     };
   }
 
-  async syncData(totalCount: number = 500) {
+  async syncData(totalCount: number = 1000) {
     this.logger.log('Starting data sync from TMDB', this.tmdbApiKey);
 
     if (!this.tmdbApiKey) {
@@ -124,6 +126,8 @@ export class MoviesService {
     }
   }
 
+
+
   private async fetchPopularMoviesPage(page: number): Promise<TMDBMovie[]> {
     try {
       const response = await axios.get<TMDBMoviesResponse>(
@@ -153,6 +157,8 @@ export class MoviesService {
       where: [{ tmdbId: tmdbMovie.id }],
     });
 
+    let movieId: string;
+
     if (existingMovie) {
       // Update existing movie
       existingMovie.overview = tmdbMovie.overview;
@@ -162,6 +168,7 @@ export class MoviesService {
       existingMovie.voteAverage = tmdbMovie.vote_average;
       existingMovie.voteCount = tmdbMovie.vote_count;
       await this.movieRepository.save(existingMovie);
+      movieId = existingMovie.id;
       this.logger.debug(`Updated existing movie: ${tmdbMovie.title}`);
     } else {
       // Create new movie
@@ -175,8 +182,19 @@ export class MoviesService {
         voteAverage: tmdbMovie.vote_average,
         voteCount: tmdbMovie.vote_count,
       });
-      await this.movieRepository.save(newMovie);
+      const savedMovie = await this.movieRepository.save(newMovie);
+      movieId = savedMovie.id;
       this.logger.debug(`Created new movie: ${tmdbMovie.title}`);
+    }
+
+    // Generate showtimes for the movie (only for new movies)
+    if (!existingMovie) {
+      try {
+        await this.showtimeGenerationService.generateShowtimesForNewMovie(movieId);
+        this.logger.debug(`Generated showtimes for new movie: ${tmdbMovie.title}`);
+      } catch (error) {
+        this.logger.error(`Failed to generate showtimes for movie ${tmdbMovie.title}: ${error.message}`);
+      }
     }
   }
 }
