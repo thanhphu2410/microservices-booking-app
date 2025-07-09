@@ -36,10 +36,11 @@ export class Showtime {
   })
   status: ShowtimeStatus;
 
+  @ManyToOne(() => Movie, movie => movie.showtimes, { cascade: false })
   @JoinColumn({ name: 'movieId' })
   movie: Movie;
 
-  @ManyToOne(() => Room, room => room.showtimes)
+  @ManyToOne(() => Room, room => room.showtimes, { cascade: false })
   @JoinColumn({ name: 'roomId' })
   room: Room;
 

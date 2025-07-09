@@ -5,6 +5,7 @@ package movie;
 service MovieService {
   rpc ListMovies (ListMoviesRequest) returns (ListMoviesResponse) {}
   rpc SyncData (SyncDataRequest) returns (SyncDataResponse) {}
+  rpc GetMovieShowtimes (GetMovieShowtimesRequest) returns (GetMovieShowtimesResponse) {}
 }
 
 message SyncDataRequest {
@@ -49,4 +50,26 @@ message SyncDataResponse {
   bool success = 1;
   string message = 2;
   repeated string errors = 3;
+}
+
+message GetMovieShowtimesRequest {
+  string movieId = 1;
+}
+
+message MovieShowtimeRoom {
+  string id = 1;
+  string name = 2;
+}
+
+message MovieShowtimeItem {
+  string showtimeId = 1;
+  MovieShowtimeRoom room = 2;
+  string startTime = 3;
+  int32 basePrice = 4;
+}
+
+message GetMovieShowtimesResponse {
+  string movieId = 1;
+  string title = 2;
+  repeated MovieShowtimeItem showtimes = 3;
 }

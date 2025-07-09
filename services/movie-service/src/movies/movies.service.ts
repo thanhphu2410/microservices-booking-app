@@ -8,6 +8,8 @@ import { TMDBMoviesResponse, TMDBMovie } from './interfaces/tmdb.interface';
 import { ListMoviesDto } from './dto/list-movies.dto';
 import { ListMoviesResponseDto } from './dto/movie-response.dto';
 import { ShowtimeGenerationService } from '../showtimes/showtime-generation.service';
+import { ShowtimeService } from '../showtimes/showtime.service';
+import { GetMovieShowtimesDto, MovieShowtimesResponseDto, MovieShowtimeItemDto } from './dto/get-movie-showtimes.dto';
 
 @Injectable()
 export class MoviesService {
@@ -20,6 +22,7 @@ export class MoviesService {
     private movieRepository: Repository<Movie>,
     private configService: ConfigService,
     private showtimeGenerationService: ShowtimeGenerationService,
+    private showtimeService: ShowtimeService,
   ) {
     this.tmdbApiKey = this.configService.get<string>('TMDB_API_KEY');
     if (!this.tmdbApiKey) {
@@ -126,8 +129,6 @@ export class MoviesService {
     }
   }
 
-
-
   private async fetchPopularMoviesPage(page: number): Promise<TMDBMovie[]> {
     try {
       const response = await axios.get<TMDBMoviesResponse>(
@@ -196,5 +197,31 @@ export class MoviesService {
         this.logger.error(`Failed to generate showtimes for movie ${tmdbMovie.title}: ${error.message}`);
       }
     }
+  }
+
+  async getMovieShowtimes(data: GetMovieShowtimesDto): Promise<MovieShowtimesResponseDto> {
+    // Fetch movie
+    const movie = await this.movieRepository.findOne({ where: { id: data.movieId } });
+    if (!movie) {
+      throw new Error('Movie not found');
+    }
+    // Fetch showtimes
+    const showtimes = await this.showtimeService.findAllShowtimes({ movieId: data.movieId });
+    // Map showtimes to required format
+    const mappedShowtimes: MovieShowtimeItemDto[] = showtimes.map(showtime => ({
+      showtimeId: showtime.id,
+      room: {
+        id: showtime.room?.id,
+        name: showtime.room?.name,
+      },
+      startTime: showtime.startTime.toISOString(),
+      basePrice: showtime.price,
+    }));
+    
+    return {
+      movieId: movie.id,
+      title: movie.title,
+      showtimes: mappedShowtimes,
+    };
   }
 }

@@ -36,6 +36,6 @@ export class Movie {
   @UpdateDateColumn()
   updatedAt: Date;
 
-  @OneToMany(() => Showtime, showtime => showtime.movie)
+  @OneToMany(() => Showtime, showtime => showtime.movie, { cascade: false })
   showtimes: Showtime[];
 }

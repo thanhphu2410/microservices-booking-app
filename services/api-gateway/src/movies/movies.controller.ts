@@ -1,6 +1,6 @@
-import { Controller, Get, Post, Body, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Query, Param } from '@nestjs/common';
 import { MoviesService } from './movies.service';
-import { ListMoviesResponse, SyncDataResponse, ListMoviesRequest } from './interfaces';
+import { ListMoviesResponse, SyncDataResponse, ListMoviesRequest, GetMovieShowtimesRequest, GetMovieShowtimesResponse } from './interfaces';
 
 @Controller('movies')
 export class MoviesController {
@@ -14,5 +14,10 @@ export class MoviesController {
   @Post('/sync-data')
   async syncData(): Promise<SyncDataResponse> {
     return this.moviesService.syncData();
+  }
+
+  @Get(':id/showtimes')
+  async getMovieShowtimes(@Param('id') id: string): Promise<GetMovieShowtimesResponse> {
+    return this.moviesService.getMovieShowtimes({ movieId: id });
   }
 }

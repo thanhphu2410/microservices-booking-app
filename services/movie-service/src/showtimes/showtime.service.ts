@@ -79,8 +79,6 @@ export class ShowtimeService {
   }
 
   async findAllShowtimes(listShowtimesDto: ListShowtimesDto = {}): Promise<ShowtimeResponseDto[]> {
-    this.logger.log('Fetching all showtimes');
-
     const queryBuilder = this.showtimeRepository
       .createQueryBuilder('showtime')
       .leftJoinAndSelect('showtime.movie', 'movie')
