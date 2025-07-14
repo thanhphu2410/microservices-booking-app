@@ -1,0 +1,91 @@
+syntax = "proto3";
+
+package seat;
+
+service SeatService {
+  rpc GetSeatLayout(GetSeatLayoutRequest) returns (GetSeatLayoutResponse);
+  rpc GetSeatStatus(GetSeatStatusRequest) returns (GetSeatStatusResponse);
+  rpc HoldSeats(HoldSeatsRequest) returns (HoldSeatsResponse);
+  rpc BookSeats(BookSeatsRequest) returns (BookSeatsResponse);
+  rpc ReleaseSeats(ReleaseSeatsRequest) returns (ReleaseSeatsResponse);
+}
+
+message GetSeatLayoutRequest {
+  string roomId = 1;
+}
+
+message SeatInfo {
+  string id = 1;
+  string row = 2;
+  int32 column = 3;
+  string type = 4;
+  double priceRatio = 5;
+  string description = 6;
+}
+
+message GetSeatLayoutResponse {
+  repeated SeatInfo seats = 1;
+  string roomId = 2;
+}
+
+message GetSeatStatusRequest {
+  string showtimeId = 1;
+}
+
+message SeatStatusInfo {
+  string seatId = 1;
+  string row = 2;
+  int32 column = 3;
+  string type = 4;
+  double priceRatio = 5;
+  string status = 6;
+  string userId = 7;
+  string bookingId = 8;
+  string holdExpiresAt = 9;
+}
+
+message GetSeatStatusResponse {
+  repeated SeatStatusInfo seats = 1;
+  string showtimeId = 2;
+}
+
+message HoldSeatsRequest {
+  string showtimeId = 1;
+  repeated string seatIds = 2;
+  string userId = 3;
+  int32 holdDurationMinutes = 4;
+}
+
+message HoldSeatsResponse {
+  bool success = 1;
+  repeated string heldSeatIds = 2;
+  repeated string failedSeatIds = 3;
+  string message = 4;
+}
+
+message BookSeatsRequest {
+  string showtimeId = 1;
+  repeated string seatIds = 2;
+  string userId = 3;
+  string bookingId = 4;
+}
+
+message BookSeatsResponse {
+  bool success = 1;
+  repeated string bookedSeatIds = 2;
+  repeated string failedSeatIds = 3;
+  string message = 4;
+}
+
+message ReleaseSeatsRequest {
+  string showtimeId = 1;
+  repeated string seatIds = 2;
+  string userId = 3;
+}
+
+message ReleaseSeatsResponse {
+  bool success = 1;
+  repeated string releasedSeatIds = 2;
+  repeated string failedSeatIds = 3;
+  string message = 4;
+}

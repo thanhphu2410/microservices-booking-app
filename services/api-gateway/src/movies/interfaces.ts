@@ -60,8 +60,34 @@ export interface GetMovieShowtimesResponse {
   showtimes: MovieShowtimeItem[];
 }
 
+export enum RoomType {
+  STANDARD = 'standard',
+  PREMIUM = 'premium',
+  IMAX = 'imax',
+  DOLBY = 'dolby',
+}
+
+export interface Room {
+  id: string;
+  name: string;
+  total_rows: number;
+  total_cols: number;
+  type: RoomType;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface ListRoomsResponse {
+  rooms: Room[];
+}
+
 export interface MovieGrpcService {
   listMovies(data: ListMoviesRequest): Promise<ListMoviesResponse>;
   syncData(data: {}): Promise<SyncDataResponse>;
   getMovieShowtimes(data: GetMovieShowtimesRequest): Promise<GetMovieShowtimesResponse>;
+}
+
+export interface RoomGrpcService {
+  getAllRooms(data: {}): Promise<ListRoomsResponse>;
 }

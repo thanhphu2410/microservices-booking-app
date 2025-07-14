@@ -13,12 +13,12 @@ services:
       - ./services/auth-service:/usr/src/app
     environment:
       - NODE_ENV=development
-      - DB_HOST=postgres-auth
-      - DB_PORT=5432
-      - DB_USERNAME=postgres
-      - DB_PASSWORD=postgres
-      - DB_NAME=auth_db
-      - RABBITMQ_URL=amqp://rabbitmq:5672
+      - DB_HOST=${AUTH_DB_HOST}
+      - DB_PORT=${AUTH_DB_PORT}
+      - DB_USERNAME=${AUTH_DB_USERNAME}
+      - DB_PASSWORD=${AUTH_DB_PASSWORD}
+      - DB_NAME=${AUTH_DB_NAME}
+      - RABBITMQ_URL=${RABBITMQ_URL}
     networks:
       - test-network
     depends_on:
@@ -36,11 +36,11 @@ services:
       - ./services/notification-service:/usr/src/app
     environment:
       - NODE_ENV=development
-      - SMTP_HOST=smtp.gmail.com
-      - SMTP_PORT=587
+      - SMTP_HOST=${SMTP_HOST}
+      - SMTP_PORT=${SMTP_PORT}
       - SMTP_USER=${SMTP_USER}
       - SMTP_PASS=${SMTP_PASS}
-      - RABBITMQ_URL=amqp://rabbitmq:5672
+      - RABBITMQ_URL=${RABBITMQ_URL}
     networks:
       - test-network
     depends_on:
@@ -61,7 +61,8 @@ services:
       - AUTH_SERVICE_URL=auth-service:50051
       - MOVIE_SERVICE_URL=movie-service:50053
       - NOTIFICATION_SERVICE_URL=notification-service:50052
-      - RABBITMQ_URL=amqp://rabbitmq:5672
+      - SEAT_SERVICE_URL=seat-service:50054
+      - RABBITMQ_URL=${RABBITMQ_URL}
     networks:
       - test-network
     depends_on:
@@ -75,9 +76,9 @@ services:
     ports:
       - "5432:5432"
     environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=auth_db
+      - POSTGRES_USER=${AUTH_DB_USERNAME}
+      - POSTGRES_PASSWORD=${AUTH_DB_PASSWORD}
+      - POSTGRES_DB=${AUTH_DB_NAME}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
@@ -120,12 +121,12 @@ services:
       - ./services/movie-service:/usr/src/app
     environment:
       - NODE_ENV=development
-      - DB_HOST=postgres-movie
-      - DB_PORT=5432
-      - DB_USERNAME=postgres
-      - DB_PASSWORD=postgres
-      - DB_NAME=movie_db
-      - RABBITMQ_URL=amqp://rabbitmq:5672
+      - DB_HOST=${MOVIE_DB_HOST}
+      - DB_PORT=${MOVIE_DB_PORT}
+      - DB_USERNAME=${MOVIE_DB_USERNAME}
+      - DB_PASSWORD=${MOVIE_DB_PASSWORD}
+      - DB_NAME=${MOVIE_DB_NAME}
+      - RABBITMQ_URL=${RABBITMQ_URL}
     networks:
       - test-network
     depends_on:
@@ -138,9 +139,9 @@ services:
     ports:
       - "5434:5432"
     environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=movie_db
+      - POSTGRES_USER=${MOVIE_DB_USERNAME}
+      - POSTGRES_PASSWORD=${MOVIE_DB_PASSWORD}
+      - POSTGRES_DB=${MOVIE_DB_NAME}
     volumes:
       - postgres_movie_data:/var/lib/postgresql/data
     networks:
@@ -148,6 +149,69 @@ services:
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 5s
+      timeout: 5s
+      retries: 5
+
+  seat-service:
+    container_name: seat-service
+    hostname: seat-service
+    build:
+      context: ./services/seat-service
+      dockerfile: Dockerfile
+    ports:
+      - "50054:50054"
+    volumes:
+      - ./services/seat-service:/usr/src/app
+    environment:
+      - NODE_ENV=development
+      - DB_HOST=${SEAT_DB_HOST}
+      - DB_PORT=${SEAT_DB_PORT}
+      - DB_USERNAME=${SEAT_DB_USERNAME}
+      - DB_PASSWORD=${SEAT_DB_PASSWORD}
+      - DB_NAME=${SEAT_DB_NAME}
+      - REDIS_HOST=${REDIS_HOST}
+      - REDIS_PORT=${REDIS_PORT}
+      - RABBITMQ_URL=${RABBITMQ_URL}
+      - REDIS_URL=${REDIS_URL}
+    networks:
+      - test-network
+    depends_on:
+      - postgres-seat
+      - redis
+
+  postgres-seat:
+    container_name: postgres-seat
+    hostname: postgres-seat
+    image: postgres:15-alpine
+    ports:
+      - "5435:5432"
+    environment:
+      - POSTGRES_USER=${SEAT_DB_USERNAME}
+      - POSTGRES_PASSWORD=${SEAT_DB_PASSWORD}
+      - POSTGRES_DB=${SEAT_DB_NAME}
+    volumes:
+      - postgres_seat_data:/var/lib/postgresql/data
+    networks:
+      - test-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    container_name: redis-ticket
+    hostname: redis
+    image: redis:7-alpine
+    ports:
+      - "6380:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - test-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
       timeout: 5s
       retries: 5
 
@@ -159,3 +223,5 @@ volumes:
   postgres_data:
   rabbitmq_data:
   postgres_movie_data:
+  postgres_seat_data:
+  redis_data:

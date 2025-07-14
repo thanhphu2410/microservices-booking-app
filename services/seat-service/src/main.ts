@@ -12,21 +12,17 @@ async function bootstrap() {
   app.connectMicroservice<MicroserviceOptions>({
     transport: Transport.GRPC,
     options: {
-      package: ['movie', 'room'],
-      protoPath: [
-        join(__dirname, '../src/movies/proto/movie.proto'),
-        join(__dirname, '../src/rooms/proto/room.proto'),
-      ],
-      url: '0.0.0.0:50053',
+      package: 'seat',
+      protoPath: join(__dirname, '../src/seats/proto/seat.proto'),
+      url: '0.0.0.0:50054',
     },
   });
 
   app.connectMicroservice<MicroserviceOptions>({
-
     transport: Transport.RMQ,
     options: {
       urls: [process.env.RABBITMQ_URL || 'amqp://localhost:5672'],
-      queue: 'movie_sync_queue',
+      queue: 'seat_sync_queue',
       queueOptions: {
         durable: true,
       },
@@ -39,7 +35,7 @@ async function bootstrap() {
   await app.startAllMicroservices();
   await app.listen(3000);
 
-  console.log('Movie microservice is listening on 0.0.0.0:50053');
+  console.log('Seat microservice is listening on 0.0.0.0:50054');
   console.log('HTTP server is running on port 3000');
 }
 bootstrap();

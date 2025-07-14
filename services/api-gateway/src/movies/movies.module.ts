@@ -17,6 +17,15 @@ import { join } from 'path';
           protoPath: join(__dirname, '../../src/proto/movie.proto'),
         },
       },
+      {
+        name: 'ROOM_SERVICE',
+        transport: Transport.GRPC,
+        options: {
+          url: process.env.MOVIE_SERVICE_URL,
+          package: 'room',
+          protoPath: join(__dirname, '../../src/proto/room.proto'),
+        },
+      },
     ]),
     AuthModule,
   ],
