@@ -19,6 +19,7 @@ services:
       - DB_PASSWORD=${AUTH_DB_PASSWORD}
       - DB_NAME=${AUTH_DB_NAME}
       - RABBITMQ_URL=${RABBITMQ_URL}
+      - JWT_SECRET=${JWT_SECRET}
     networks:
       - test-network
     depends_on:
@@ -63,6 +64,7 @@ services:
       - NOTIFICATION_SERVICE_URL=notification-service:50052
       - SEAT_SERVICE_URL=seat-service:50054
       - RABBITMQ_URL=${RABBITMQ_URL}
+      - JWT_SECRET=${JWT_SECRET}
     networks:
       - test-network
     depends_on:

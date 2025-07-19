@@ -14,7 +14,7 @@ import { RabbitMQModule } from '../rabbitmq/rabbitmq.module';
     PassportModule,
     JwtModule.register({
       global: true,
-      secret: process.env.JWT_SECRET || 'your-secret-key', // In production, use environment variable
+      secret: process.env.JWT_SECRET,
       signOptions: { expiresIn: '1d' },
     }),
     RabbitMQModule,

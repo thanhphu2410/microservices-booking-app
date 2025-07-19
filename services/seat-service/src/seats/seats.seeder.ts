@@ -27,7 +27,7 @@ export class SeatsSeeder {
             type: seatType,
             priceRatio,
             description: `${String.fromCharCode(64 + row)}${col}`,
-            roomId: 'room-1', // Hardcoded room ID
+            roomId: '018f97c7-e25e-4dc2-a78d-0f0aa1cf85f5', // Hardcoded room ID
           });
         }
       }
@@ -45,7 +45,7 @@ export class SeatsSeeder {
             type: seatType,
             priceRatio,
             description: `${String.fromCharCode(64 + row)}${col}`,
-            roomId: 'room-2', // Hardcoded room ID
+            roomId: '02c60491-308e-4086-89c2-007553d0002a', // Hardcoded room ID
           });
         }
       }

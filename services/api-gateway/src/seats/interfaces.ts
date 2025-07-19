@@ -13,10 +13,14 @@ export interface BookSeatsResponse { success: boolean; bookedSeatIds: string[]; 
 export interface ReleaseSeatsRequest { showtimeId: string; seatIds: string[]; userId: string; }
 export interface ReleaseSeatsResponse { success: boolean; releasedSeatIds: string[]; failedSeatIds: string[]; message: string; }
 
+export interface SeedSeatsRequest { }
+export interface SeedSeatsResponse { }
+
 export interface SeatGrpcService {
   getSeatLayout(data: GetSeatLayoutRequest): Promise<GetSeatLayoutResponse>;
   getSeatStatus(data: GetSeatStatusRequest): Promise<GetSeatStatusResponse>;
   holdSeats(data: HoldSeatsRequest): Promise<HoldSeatsResponse>;
   bookSeats(data: BookSeatsRequest): Promise<BookSeatsResponse>;
   releaseSeats(data: ReleaseSeatsRequest): Promise<ReleaseSeatsResponse>;
+  seedSeats(data: SeedSeatsRequest): Promise<SeedSeatsResponse>;
 }

@@ -1,4 +1,4 @@
-import { Controller, UseGuards, Body, Get, Param, Post, Query } from '@nestjs/common';
+import { Controller, UseGuards, Body, Get, Param, Post, Query, Request } from '@nestjs/common';
 import { SeatsService } from './seats.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
@@ -18,17 +18,25 @@ export class SeatsController {
   }
 
   @Post('hold')
-  async holdSeats(@Body() body: { showtimeId: string; seatIds: string[]; userId: string; holdDurationMinutes?: number }) {
-    return this.seatsService.holdSeats(body);
+  async holdSeats(@Request() req, @Body() body: { showtimeId: string; seatIds: string[]; holdDurationMinutes?: number }) {
+    const userId = req.user.id;
+    return this.seatsService.holdSeats({ ...body, userId });
   }
 
   @Post('book')
-  async bookSeats(@Body() body: { showtimeId: string; seatIds: string[]; userId: string; bookingId: string }) {
-    return this.seatsService.bookSeats(body);
+  async bookSeats(@Request() req, @Body() body: { showtimeId: string; seatIds: string[]; bookingId: string }) {
+    const userId = req.user.id;
+    return this.seatsService.bookSeats({ ...body, userId });
   }
 
   @Post('release')
-  async releaseSeats(@Body() body: { showtimeId: string; seatIds: string[]; userId: string }) {
-    return this.seatsService.releaseSeats(body);
+  async releaseSeats(@Request() req, @Body() body: { showtimeId: string; seatIds: string[] }) {
+    const userId = req.user.id;
+    return this.seatsService.releaseSeats({ ...body, userId });
+  }
+
+  @Post('seed')
+  async seedSeats() {
+    return this.seatsService.seedSeats();
   }
 }

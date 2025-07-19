@@ -105,43 +105,70 @@ export class SeatsService {
           lockDuration,
           'NX'
         );
+        console.log('acquired', acquired);
 
         if (acquired) {
-          // Check if seat is available
+          // Check if seat is available, including expired holds
           const seatStatus = await this.seatStatusRepository.findOne({
             where: {
               seatId,
               showtimeId: data.showtimeId,
             },
           });
+          console.log('seatStatus', seatStatus);
+
+          let canHold = false;
 
           if (!seatStatus) {
-            // Create new seat status as AVAILABLE
-            await this.seatStatusRepository.save({
-              seatId,
-              showtimeId: data.showtimeId,
-              status: SeatStatusEnum.HOLD,
-              userId: data.userId,
-              holdExpiresAt: new Date(Date.now() + holdDuration * 60 * 1000),
-            });
+            // No seat status exists, seat is available
+            canHold = true;
           } else if (seatStatus.status === SeatStatusEnum.AVAILABLE) {
-            // Update existing seat status to HOLD
-            await this.seatStatusRepository.update(
-              { id: seatStatus.id },
-              {
+            // Seat is explicitly available
+            canHold = true;
+          } else if (seatStatus.status === SeatStatusEnum.HOLD && seatStatus.holdExpiresAt) {
+            // Check if the hold has expired
+            const now = new Date();
+            if (seatStatus.holdExpiresAt < now) {
+              // Hold has expired, treat as available
+              canHold = true;
+              // Clean up the expired hold
+              await this.seatStatusRepository.update(
+                { id: seatStatus.id },
+                {
+                  status: SeatStatusEnum.AVAILABLE,
+                  userId: null,
+                  holdExpiresAt: null,
+                }
+              );
+            }
+          }
+
+          if (canHold) {
+            // Create or update seat status to HOLD
+            if (!seatStatus) {
+              await this.seatStatusRepository.save({
+                seatId,
+                showtimeId: data.showtimeId,
                 status: SeatStatusEnum.HOLD,
                 userId: data.userId,
                 holdExpiresAt: new Date(Date.now() + holdDuration * 60 * 1000),
-              }
-            );
+              });
+            } else {
+              await this.seatStatusRepository.update(
+                { id: seatStatus.id },
+                {
+                  status: SeatStatusEnum.HOLD,
+                  userId: data.userId,
+                  holdExpiresAt: new Date(Date.now() + holdDuration * 60 * 1000),
+                }
+              );
+            }
+            heldSeatIds.push(seatId);
           } else {
             // Seat is not available, release the lock
             await this.redisClient.del(lockKey);
             failedSeatIds.push(seatId);
-            continue;
           }
-
-          heldSeatIds.push(seatId);
         } else {
           failedSeatIds.push(seatId);
         }
@@ -299,6 +326,56 @@ export class SeatsService {
       this.logger.log(`Cleaned up ${expiredHolds.length} expired holds`);
     } catch (error) {
       this.logger.error(`Error cleaning up expired holds: ${error.message}`);
+    }
+  }
+
+  async seed() {
+    try {
+      // Create seats for room 1 (10 rows x 10 columns)
+      const seats1 = [];
+      for (let row = 1; row <= 10; row++) {
+        for (let col = 1; col <= 10; col++) {
+          const seatType = row <= 2 ? SeatType.VIP : SeatType.NORMAL;
+          const priceRatio = row <= 2 ? 1.5 : 1.0;
+
+          seats1.push({
+            row: String.fromCharCode(64 + row), // A, B, C, etc.
+            column: col,
+            type: seatType,
+            priceRatio,
+            description: `${String.fromCharCode(64 + row)}${col}`,
+            roomId: '018f97c7-e25e-4dc2-a78d-0f0aa1cf85f5', // Hardcoded room ID
+          });
+        }
+      }
+
+      // Create seats for room 2 (8 rows x 10 columns)
+      const seats2 = [];
+      for (let row = 1; row <= 8; row++) {
+        for (let col = 1; col <= 10; col++) {
+          const seatType = row <= 2 ? SeatType.PREMIUM : SeatType.NORMAL;
+          const priceRatio = row <= 2 ? 2.0 : 1.0;
+
+          seats2.push({
+            row: String.fromCharCode(64 + row), // A, B, C, etc.
+            column: col,
+            type: seatType,
+            priceRatio,
+            description: `${String.fromCharCode(64 + row)}${col}`,
+            roomId: '02c60491-308e-4086-89c2-007553d0002a', // Hardcoded room ID
+          });
+        }
+      }
+
+      // Save all seats
+      await this.seatRepository.save([...seats1, ...seats2]);
+
+      this.logger.log('Seats seeded successfully');
+      this.logger.log(`Created ${seats1.length} seats for room 1`);
+      this.logger.log(`Created ${seats2.length} seats for room 2`);
+    } catch (error) {
+      this.logger.error(`Error seeding seats: ${error.message}`);
+      throw error;
     }
   }
 }

@@ -32,7 +32,7 @@ export class SeatsService implements OnModuleInit {
     return this.seatService.releaseSeats(data);
   }
 
-  async syncData() {
-    
+  async seedSeats() {
+    return this.seatService.seedSeats({});
   }
 }

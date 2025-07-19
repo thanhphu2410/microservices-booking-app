@@ -9,7 +9,7 @@ import { RmqOptions, Transport } from '@nestjs/microservices';
         name: 'NOTIFICATION_SERVICE',
         transport: Transport.RMQ,
         options: {
-          urls: [process.env.RABBITMQ_URL || 'amqp://localhost:5672'],
+          urls: [process.env.RABBITMQ_URL],
           queue: 'user_events_queue',
           queueOptions: {
             durable: true

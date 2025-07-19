@@ -17,7 +17,7 @@ export class RoomService {
     this.logger.log('Fetching all rooms');
 
     const rooms = await this.roomRepository.find({
-      order: { name: 'ASC' }
+      order: { id: 'asc' }
     });
 
     return rooms.map(room => this.mapToResponseDto(room));

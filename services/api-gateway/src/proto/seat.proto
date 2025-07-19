@@ -8,6 +8,15 @@ service SeatService {
   rpc HoldSeats(HoldSeatsRequest) returns (HoldSeatsResponse);
   rpc BookSeats(BookSeatsRequest) returns (BookSeatsResponse);
   rpc ReleaseSeats(ReleaseSeatsRequest) returns (ReleaseSeatsResponse);
+  rpc SeedSeats (SeedSeatsRequest) returns (SeedSeatsResponse) {}
+}
+
+message SeedSeatsRequest {
+
+}
+
+message SeedSeatsResponse {
+
 }
 
 message GetSeatLayoutRequest {

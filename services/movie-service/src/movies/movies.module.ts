@@ -16,7 +16,7 @@ import { MovieSyncConsumer } from '../consumers/movie-sync.consumer';
         name: 'MOVIE_SYNC_SERVICE',
         transport: Transport.RMQ,
         options: {
-          urls: [process.env.RABBITMQ_URL || 'amqp://localhost:5672'],
+          urls: [process.env.RABBITMQ_URL],
           queue: 'movie_sync_queue',
           queueOptions: {
             durable: true
