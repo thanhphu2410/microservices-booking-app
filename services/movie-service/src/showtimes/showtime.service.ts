@@ -1,10 +1,11 @@
-import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, BadRequestException, Inject } from '@nestjs/common';
 import { Showtime, ShowtimeStatus } from './entities/showtime.entity';
 import { Movie } from '../movies/entities/movie.entity';
 import { Room } from '../rooms/entities/room.entity';
 import { Repository, Between, Not } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { CreateShowtimeDto, UpdateShowtimeDto, ShowtimeResponseDto, ListShowtimesDto } from './dto/showtime.dto';
+import { ClientProxy } from '@nestjs/microservices';
 
 @Injectable()
 export class ShowtimeService {
@@ -17,6 +18,7 @@ export class ShowtimeService {
     private movieRepository: Repository<Movie>,
     @InjectRepository(Room)
     private roomRepository: Repository<Room>,
+    @Inject('SEAT_EVENT_SERVICE') private readonly seatEventClient: ClientProxy,
   ) {}
 
   async createShowtime(createShowtimeDto: CreateShowtimeDto): Promise<ShowtimeResponseDto> {
@@ -72,7 +74,9 @@ export class ShowtimeService {
     });
 
     const savedShowtime = await this.showtimeRepository.save(showtime);
-
+    this.seatEventClient.emit('showtime_created', {
+      showtime: savedShowtime
+    });
     this.logger.log(`Showtime created successfully: ${savedShowtime.id}`);
 
     return this.mapToResponseDto(savedShowtime);

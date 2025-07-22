@@ -86,12 +86,28 @@ export class SeatsService {
     }
   }
 
+  async validateSeatAndShowtime(seatRoomId: string, showtimeId: string) {
+    const showtime = await this.redisClient.hgetall(`showtime:${showtimeId}`);
+    if (!showtime || !showtime.room_id) {
+      throw new Error('Showtime not found');
+    }
+    if (seatRoomId !== showtime.room_id) {
+      throw new Error('Seat and showtime room IDs do not match');
+    }
+    return true;
+  }
+
   async holdSeats(data: HoldSeatsDto) {
     const heldSeatIds: string[] = [];
     const failedSeatIds: string[] = [];
     const holdDuration = data.holdDurationMinutes || 5; // Default 5 minutes
 
     for (const seatId of data.seatIds) {
+      const seat = await this.seatRepository.findOne({ where: { id: seatId } });
+      if (!seat) {
+        throw new Error('Seat not found');
+      }
+      await this.validateSeatAndShowtime(seat.roomId, data.showtimeId);
       try {
         const lockKey = `seat_lock:${data.showtimeId}:${seatId}`;
         const lockValue = data.userId;
@@ -329,12 +345,28 @@ export class SeatsService {
     }
   }
 
-  async seed() {
+  async seed(roomId: string) {
     try {
-      // Create seats for room 1 (10 rows x 10 columns)
+      const seats = await this.seatRepository.find({
+        where: { roomId: roomId },
+      });
+
+      if (seats.length > 0) {
+        this.logger.log(`Seeds already exist for room ${roomId}`);
+        return;
+      }
+
+      // Randomly determine the number of rows and columns (between 5 and 15)
+      const minRows = 5;
+      const maxRows = 15;
+      const minCols = 5;
+      const maxCols = 15;
+      const numRows = Math.floor(Math.random() * (maxRows - minRows + 1)) + minRows;
+      const numCols = Math.floor(Math.random() * (maxCols - minCols + 1)) + minCols;
+
       const seats1 = [];
-      for (let row = 1; row <= 10; row++) {
-        for (let col = 1; col <= 10; col++) {
+      for (let row = 1; row <= numRows; row++) {
+        for (let col = 1; col <= numCols; col++) {
           const seatType = row <= 2 ? SeatType.VIP : SeatType.NORMAL;
           const priceRatio = row <= 2 ? 1.5 : 1.0;
 
@@ -344,35 +376,16 @@ export class SeatsService {
             type: seatType,
             priceRatio,
             description: `${String.fromCharCode(64 + row)}${col}`,
-            roomId: '018f97c7-e25e-4dc2-a78d-0f0aa1cf85f5', // Hardcoded room ID
-          });
-        }
-      }
-
-      // Create seats for room 2 (8 rows x 10 columns)
-      const seats2 = [];
-      for (let row = 1; row <= 8; row++) {
-        for (let col = 1; col <= 10; col++) {
-          const seatType = row <= 2 ? SeatType.PREMIUM : SeatType.NORMAL;
-          const priceRatio = row <= 2 ? 2.0 : 1.0;
-
-          seats2.push({
-            row: String.fromCharCode(64 + row), // A, B, C, etc.
-            column: col,
-            type: seatType,
-            priceRatio,
-            description: `${String.fromCharCode(64 + row)}${col}`,
-            roomId: '02c60491-308e-4086-89c2-007553d0002a', // Hardcoded room ID
+            roomId: roomId,
           });
         }
       }
 
       // Save all seats
-      await this.seatRepository.save([...seats1, ...seats2]);
+      await this.seatRepository.save([...seats1]);
 
       this.logger.log('Seats seeded successfully');
-      this.logger.log(`Created ${seats1.length} seats for room 1`);
-      this.logger.log(`Created ${seats2.length} seats for room 2`);
+      this.logger.log(`Created ${seats1.length} seats for room ${roomId} (${numRows} rows x ${numCols} columns)`);
     } catch (error) {
       this.logger.error(`Error seeding seats: ${error.message}`);
       throw error;

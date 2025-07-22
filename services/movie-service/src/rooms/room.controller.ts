@@ -1,5 +1,5 @@
-import { Controller } from '@nestjs/common';
-import { GrpcMethod, RpcException } from '@nestjs/microservices';
+import { Controller, Inject } from '@nestjs/common';
+import { ClientProxy, GrpcMethod, RpcException } from '@nestjs/microservices';
 import { Logger } from '@nestjs/common';
 import { RoomService } from './room.service';
 import { RoomResponseDto } from './dto/room.dto';
@@ -10,6 +10,7 @@ export class RoomController {
 
   constructor(
     private readonly roomService: RoomService,
+    @Inject('SEAT_EVENT_SERVICE') private readonly seatEventClient: ClientProxy,
   ) {}
 
   @GrpcMethod('RoomService', 'GetAllRooms')
@@ -17,6 +18,11 @@ export class RoomController {
     try {
       this.logger.log('Fetching all rooms');
       const rooms = await this.roomService.findAllRooms();
+      for (const room of rooms) {
+        this.seatEventClient.emit('seats_seed', {
+          roomId: room.id,
+        });
+      }
       return { rooms };
     } catch (error) {
       if (error instanceof RpcException) {

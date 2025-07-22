@@ -188,14 +188,12 @@ export class MoviesService {
       this.logger.debug(`Created new movie: ${tmdbMovie.title}`);
     }
 
-    // Generate showtimes for the movie (only for new movies)
-    if (!existingMovie) {
-      try {
-        await this.showtimeGenerationService.generateShowtimesForNewMovie(movieId);
-        this.logger.debug(`Generated showtimes for new movie: ${tmdbMovie.title}`);
-      } catch (error) {
-        this.logger.error(`Failed to generate showtimes for movie ${tmdbMovie.title}: ${error.message}`);
-      }
+    // Generate showtimes for the movie
+    try {
+      await this.showtimeGenerationService.generateShowtimesForNewMovie(movieId);
+      this.logger.debug(`Generated showtimes for movie: ${tmdbMovie.title}`);
+    } catch (error) {
+      this.logger.error(`Failed to generate showtimes for movie ${tmdbMovie.title}: ${error.message}`);
     }
   }
 
@@ -217,7 +215,7 @@ export class MoviesService {
       startTime: showtime.startTime.toISOString(),
       basePrice: showtime.price,
     }));
-    
+
     return {
       movieId: movie.id,
       title: movie.title,

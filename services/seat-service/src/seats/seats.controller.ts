@@ -119,8 +119,8 @@ export class SeatsController {
   @GrpcMethod('SeatService', 'SeedSeats')
   async seedSeats() {
     try {
-      const result = await this.seatsService.seed();
-      return result;
+      // const result = await this.seatsService.seed();
+      // return result;
     } catch (error) {
       this.logger.error(`SeedSeats failed: ${error.message}`);
       throw new RpcException({

@@ -9,19 +9,6 @@ import { ClientsModule, Transport } from '@nestjs/microservices';
     ConfigModule.forRoot({
       isGlobal: true,
     }),
-    ClientsModule.register([
-      {
-        name: 'NOTIFICATION_SERVICE',
-        transport: Transport.RMQ,
-        options: {
-          urls: [process.env.RABBITMQ_URL],
-          queue: 'user_events_queue',
-          queueOptions: {
-            durable: true
-          }
-        },
-      },
-    ]),
     NotificationModule,
   ],
   controllers: [UserConsumer],

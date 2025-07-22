@@ -6,6 +6,7 @@ import { SeatsService } from './seats.service';
 import { Seat } from './entities/seat.entity';
 import { SeatStatus } from './entities/seat-status.entity';
 import { RedisModule } from '@liaoliaots/nestjs-redis';
+import { SeatConsumer } from './consumers/seat.consumer';
 
 @Module({
   imports: [
@@ -16,7 +17,7 @@ import { RedisModule } from '@liaoliaots/nestjs-redis';
         transport: Transport.RMQ,
         options: {
           urls: [process.env.RABBITMQ_URL],
-          queue: 'seat_events',
+          queue: 'seat_events_queue',
           queueOptions: {
             durable: true,
           },
@@ -29,7 +30,7 @@ import { RedisModule } from '@liaoliaots/nestjs-redis';
       },
     }),
   ],
-  controllers: [SeatsController],
+  controllers: [SeatsController, SeatConsumer],
   providers: [SeatsService],
   exports: [SeatsService],
 })

@@ -41,6 +41,12 @@ export class ShowtimeGenerationService {
       return;
     }
 
+    const showtimes = await this.showtimeService.findAllShowtimes({ movieId: movieId });
+    if (showtimes.length > 0) {
+      this.logger.warn('Showtimes already generated for this movie');
+      return;
+    }
+
     // Generate showtimes for each day
     for (let day = 0; day < days; day++) {
       await this.generateShowtimesForDay(movieId, rooms, day);
@@ -87,7 +93,7 @@ export class ShowtimeGenerationService {
 
     // Generate random price based on room type
     const basePrice = this.getBasePriceForRoomType(randomRoom.type);
-    const priceVariation = 0.8 + Math.random() * 0.4; // ±20% variation
+    const priceVariation = 1;
     const price = Math.round(basePrice * priceVariation * 100) / 100; // Round to 2 decimal places
 
     const createShowtimeDto: CreateShowtimeDto = {
