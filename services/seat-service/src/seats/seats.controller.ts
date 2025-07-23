@@ -25,9 +25,9 @@ export class SeatsController {
   private async validateDto<T>(data: any, dto: new () => T): Promise<T> {
     const instance = plainToInstance(dto, data);
     const errors = await validate(instance as object);
-    this.logger.error(`GetSeatLayout failed: ${errors}`);
-
+    
     if (errors.length > 0) {
+      this.logger.error(`Errors : ${errors}`);
       const errorMessages = errors
         .map(error => Object.values(error.constraints || {}))
         .flat()
@@ -49,7 +49,6 @@ export class SeatsController {
       const result = await this.seatsService.getSeatLayout(layoutDto);
       return result;
     } catch (error) {
-      this.logger.error(`GetSeatLayout failed: ${error.message}`);
       throw new RpcException({
         message: 'GetSeatLayout failed',
         details: error.message,

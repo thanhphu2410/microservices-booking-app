@@ -12,6 +12,8 @@ import {
   HoldSeatsDto,
   BookSeatsDto,
   ReleaseSeatsDto,
+  GetSeatLayoutResponseDto,
+  GetSeatStatusResponseDto,
 } from './dto';
 
 @Injectable()
@@ -31,7 +33,7 @@ export class SeatsService {
     this.redisClient = this.redisService.getOrThrow();
   }
 
-  async getSeatLayout(data: GetSeatLayoutDto) {
+  async getSeatLayout(data: GetSeatLayoutDto): Promise<GetSeatLayoutResponseDto> {
     try {
       const seats = await this.seatRepository.find({
         where: { roomId: data.roomId },
@@ -46,7 +48,7 @@ export class SeatsService {
         seats: seats.map(seat => ({
           id: seat.id,
           row: seat.row,
-          column: seat.column,
+          column: seat.column.toString(),
           type: seat.type,
           priceRatio: seat.priceRatio,
           description: seat.description,
@@ -59,7 +61,7 @@ export class SeatsService {
     }
   }
 
-  async getSeatStatus(data: GetSeatStatusDto) {
+  async getSeatStatus(data: GetSeatStatusDto): Promise<GetSeatStatusResponseDto> {
     try {
       const seatStatuses = await this.seatStatusRepository.find({
         where: { showtimeId: data.showtimeId },
@@ -70,7 +72,7 @@ export class SeatsService {
         seats: seatStatuses.map(status => ({
           seatId: status.seatId,
           row: status.seat.row,
-          column: status.seat.column,
+          column: status.seat.column.toString(),
           type: status.seat.type,
           priceRatio: status.seat.priceRatio,
           status: status.status,
@@ -121,8 +123,6 @@ export class SeatsService {
           lockDuration,
           'NX'
         );
-        console.log('acquired', acquired);
-
         if (acquired) {
           // Check if seat is available, including expired holds
           const seatStatus = await this.seatStatusRepository.findOne({
@@ -131,8 +131,6 @@ export class SeatsService {
               showtimeId: data.showtimeId,
             },
           });
-          console.log('seatStatus', seatStatus);
-
           let canHold = false;
 
           if (!seatStatus) {

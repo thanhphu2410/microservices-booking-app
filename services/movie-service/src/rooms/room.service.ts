@@ -14,8 +14,6 @@ export class RoomService {
   ) {}
 
   async findAllRooms(): Promise<RoomResponseDto[]> {
-    this.logger.log('Fetching all rooms');
-
     const rooms = await this.roomRepository.find({
       order: { id: 'asc' }
     });
@@ -24,8 +22,6 @@ export class RoomService {
   }
 
   async findRoomById(id: string): Promise<RoomResponseDto> {
-    this.logger.log(`Fetching room by id: ${id}`);
-
     const room = await this.roomRepository.findOne({
       where: { id }
     });
@@ -38,8 +34,6 @@ export class RoomService {
   }
 
   async findActiveRooms(): Promise<RoomResponseDto[]> {
-    this.logger.log('Fetching active rooms');
-
     const rooms = await this.roomRepository.find({
       where: { isActive: true },
       order: { name: 'ASC' }
@@ -56,8 +50,8 @@ export class RoomService {
       isActive: room.isActive,
       createdAt: room.createdAt,
       updatedAt: room.updatedAt,
-      total_rows: room.total_rows,
-      total_cols: room.total_cols,
+      totalRows: room.total_rows,
+      totalCols: room.total_cols,
     };
   }
 }

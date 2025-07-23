@@ -5,11 +5,9 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { ConfigService } from '@nestjs/config';
 import axios from 'axios';
 import { TMDBMoviesResponse, TMDBMovie } from './interfaces/tmdb.interface';
-import { ListMoviesDto } from './dto/list-movies.dto';
-import { ListMoviesResponseDto } from './dto/movie-response.dto';
 import { ShowtimeGenerationService } from '../showtimes/showtime-generation.service';
 import { ShowtimeService } from '../showtimes/showtime.service';
-import { GetMovieShowtimesDto, MovieShowtimesResponseDto, MovieShowtimeItemDto } from './dto/get-movie-showtimes.dto';
+import { GetMovieShowtimesDto, ListMoviesDto, ListMoviesResponseDto, MovieShowtimesResponseDto, MovieShowtimeItemDto } from './dto';
 
 @Injectable()
 export class MoviesService {

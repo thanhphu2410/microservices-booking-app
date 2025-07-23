@@ -16,7 +16,6 @@ export class RoomController {
   @GrpcMethod('RoomService', 'GetAllRooms')
   async getAllRooms(): Promise<{ rooms: RoomResponseDto[] }> {
     try {
-      this.logger.log('Fetching all rooms');
       const rooms = await this.roomService.findAllRooms();
       for (const room of rooms) {
         this.seatEventClient.emit('seats_seed', {
@@ -38,7 +37,6 @@ export class RoomController {
   @GrpcMethod('RoomService', 'GetRoomById')
   async getRoomById(data: { id: string }): Promise<RoomResponseDto> {
     try {
-      this.logger.log(`Fetching room by id: ${data.id}`);
       const result = await this.roomService.findRoomById(data.id);
       return result;
     } catch (error) {

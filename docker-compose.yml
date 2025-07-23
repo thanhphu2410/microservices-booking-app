@@ -60,9 +60,10 @@ services:
     environment:
       - NODE_ENV=development
       - AUTH_SERVICE_URL=auth-service:50051
-      - MOVIE_SERVICE_URL=movie-service:50053
       - NOTIFICATION_SERVICE_URL=notification-service:50052
+      - MOVIE_SERVICE_URL=movie-service:50053
       - SEAT_SERVICE_URL=seat-service:50054
+      - BOOKING_SERVICE_URL=booking-service:50055
       - RABBITMQ_URL=${RABBITMQ_URL}
       - JWT_SECRET=${JWT_SECRET}
     networks:
@@ -70,6 +71,9 @@ services:
     depends_on:
       - auth-service
       - notification-service
+      - movie-service
+      - seat-service
+      - booking-service
 
   postgres-auth:
     container_name: postgres-auth
@@ -200,6 +204,53 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+      
+  booking-service:
+    container_name: booking-service
+    hostname: booking-service
+    build:
+      context: ./services/booking-service
+      dockerfile: Dockerfile
+    ports:
+      - "50055:50055"
+    volumes:
+      - ./services/booking-service:/usr/src/app
+    environment:
+      - NODE_ENV=development
+      - DB_HOST=${BOOKING_DB_HOST}
+      - DB_PORT=${BOOKING_DB_PORT}
+      - DB_USERNAME=${BOOKING_DB_USERNAME}
+      - DB_PASSWORD=${BOOKING_DB_PASSWORD}
+      - DB_NAME=${BOOKING_DB_NAME}
+      - REDIS_HOST=${REDIS_HOST}
+      - REDIS_PORT=${REDIS_PORT}
+      - RABBITMQ_URL=${RABBITMQ_URL}
+      - REDIS_URL=${REDIS_URL}
+    networks:
+      - test-network
+    depends_on:
+      - postgres-booking
+      - redis
+
+  postgres-booking:
+    container_name: postgres-booking
+    hostname: postgres-booking
+    image: postgres:15-alpine
+    ports:
+      - "5436:5432"
+    environment:
+      - POSTGRES_USER=${BOOKING_DB_USERNAME}
+      - POSTGRES_PASSWORD=${BOOKING_DB_PASSWORD}
+      - POSTGRES_DB=${BOOKING_DB_NAME}
+    volumes:
+      - postgres_booking_data:/var/lib/postgresql/data
+    networks:
+      - test-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   redis:
     container_name: redis-ticket
@@ -226,4 +277,5 @@ volumes:
   rabbitmq_data:
   postgres_movie_data:
   postgres_seat_data:
+  postgres_booking_data:
   redis_data:
