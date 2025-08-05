@@ -1,6 +1,12 @@
 import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn, OneToMany } from 'typeorm';
 import { BookingItem } from './booking-item.entity';
 
+export enum BookingStatusEnum {
+  PENDING = 'PENDING',
+  PAID = 'PAID',
+  CANCELED = 'CANCELED',
+}
+
 @Entity('bookings')
 export class Booking {
   @PrimaryGeneratedColumn('uuid')
@@ -12,7 +18,7 @@ export class Booking {
   @Column()
   showtime_id: string;
 
-  @Column('int')
+  @Column('decimal', { precision: 10, scale: 2 })
   total_amount: number;
 
   @Column({ type: 'text', default: 'PENDING' })

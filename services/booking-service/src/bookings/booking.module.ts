@@ -22,6 +22,17 @@ import { BookingItem } from './entities/booking-item.entity';
           },
         },
       },
+      {
+        name: 'SEAT_EVENT_SERVICE',
+        transport: Transport.RMQ,
+        options: {
+          urls: [process.env.RABBITMQ_URL],
+          queue: 'seat_events_queue',
+          queueOptions: {
+            durable: true,
+          },
+        },
+      },
     ]),
     RedisModule.forRoot({
       config: {

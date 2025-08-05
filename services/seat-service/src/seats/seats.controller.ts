@@ -86,21 +86,6 @@ export class SeatsController {
     }
   }
 
-  @GrpcMethod('SeatService', 'BookSeats')
-  async bookSeats(data: BookSeatsDto) {
-    try {
-      const bookSeatsDto = await this.validateDto(data, BookSeatsDto);
-      const result = await this.seatsService.bookSeats(data);
-      return result;
-    } catch (error) {
-      this.logger.error(`BookSeats failed: ${error.message}`);
-      throw new RpcException({
-        message: 'BookSeats failed',
-        details: error.message,
-      });
-    }
-  }
-
   @GrpcMethod('SeatService', 'ReleaseSeats')
   async releaseSeats(data: ReleaseSeatsDto) {
     try {

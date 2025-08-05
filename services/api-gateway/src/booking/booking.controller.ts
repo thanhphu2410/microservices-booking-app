@@ -19,9 +19,9 @@ export class BookingsController {
   }
 
   @Post()
-  async createBooking(@Request() req, @Body() body: { showtime_id: string; seat_ids: string[] }) {
+  async createBooking(@Request() req, @Body() body: { showtime_id: string; seats: { id: string; priceRatio: number }[] }) {
     const user_id = req.user.id;
-    return this.bookingsService.createBooking(user_id, body.showtime_id, body.seat_ids);
+    return this.bookingsService.createBooking(user_id, body.showtime_id, body.seats);
   }
 
   @Post(':id/pay')

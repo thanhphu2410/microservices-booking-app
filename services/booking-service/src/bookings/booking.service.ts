@@ -1,9 +1,10 @@
 import { Injectable, Logger, Inject } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Booking } from './entities/booking.entity';
+import { Booking, BookingStatusEnum } from './entities/booking.entity';
 import { BookingItem } from './entities/booking-item.entity';
 import { ListBookingsResponseDto, BookingResponseDto, ListBookingsDto, GetBookingDto, CreateBookingDto, PayBookingDto, CancelBookingDto } from './dto/index';
+import { ClientProxy } from '@nestjs/microservices';
 
 @Injectable()
 export class BookingsService {
@@ -14,6 +15,7 @@ export class BookingsService {
     private readonly bookingRepository: Repository<Booking>,
     @InjectRepository(BookingItem)
     private readonly bookingItemRepository: Repository<BookingItem>,
+    @Inject('SEAT_EVENT_SERVICE') private readonly seatEventClient: ClientProxy,
   ) {}
 
   async listBookings(dto: ListBookingsDto): Promise<ListBookingsResponseDto> {
@@ -30,6 +32,8 @@ export class BookingsService {
       },
       relations: ['items'],
     });
+
+    this.logger.log(`Found ${bookings.length} bookings for user ${dto.userId}`);
 
     const transformedBookings = bookings.map(booking => ({
       id: booking.id,
@@ -82,38 +86,81 @@ export class BookingsService {
   }
 
   async createBooking(dto: CreateBookingDto): Promise<BookingResponseDto> {
-    // For demo, assume each seat is 100. In real app, fetch seat price from seat-service.
-    const pricePerSeat = 100;
-    const totalAmount = dto.seatIds.length * pricePerSeat;
-    const booking = this.bookingRepository.create({
-      user_id: dto.userId,
-      showtime_id: dto.showtimeId,
-      total_amount: totalAmount,
-      status: 'PENDING',
-      items: dto.seatIds.map(seat_id =>
-        this.bookingItemRepository.create({ seat_id, price: pricePerSeat })
-      ),
-    });
-    const saved = await this.bookingRepository.save(booking);
-    return this.getBooking({ id: saved.id });
+    // Check if any of the requested seats are already booked for this showtime
+    try {
+      const bookedSeats = await this.bookingItemRepository
+      .createQueryBuilder('item')
+      .innerJoin('item.booking', 'booking')
+      .where('item.seat_id IN (:...seatIds)', { seatIds: dto.seats.map(seat => seat.id) })
+      .andWhere('booking.showtime_id = :showtimeId', { showtimeId: dto.showtimeId })
+      .andWhere('booking.status != :cancelled', { cancelled: BookingStatusEnum.CANCELED })
+      .getMany();
+
+
+      if (bookedSeats.length > 0) {
+        throw new Error(`Some seats are already booked: ${bookedSeats.map(s => s.seat_id).join(', ')}`);
+      }
+      // Base price for seats, in real app this could come from seat-service or showtime configuration
+      const basePrice = 12;
+
+      // Calculate total amount based on seat price ratios
+      const totalAmount = dto.seats.reduce((total, seat) => {
+        const seatPrice = basePrice * seat.priceRatio;
+        return total + seatPrice;
+      }, 0);
+
+      const booking = this.bookingRepository.create({
+        user_id: dto.userId,
+        showtime_id: dto.showtimeId,
+        total_amount: totalAmount,
+        status: BookingStatusEnum.PENDING,
+        items: dto.seats.map(seat => {
+          const seatPrice = basePrice * seat.priceRatio;
+          return this.bookingItemRepository.create({
+            seat_id: seat.id,
+            price: seatPrice
+          });
+        }),
+      });
+      const saved = await this.bookingRepository.save(booking);
+      return this.getBooking({ id: saved.id });
+    } catch (error) {
+      this.logger.error(`CreateBooking failed: ${error.message}`);
+    }
   }
 
   async payBooking(dto: PayBookingDto): Promise<BookingResponseDto> {
     const booking = await this.bookingRepository.findOne({ where: { id: dto.id }, relations: ['items'] });
     if (!booking) throw new Error('Booking not found');
-    if (booking.status !== 'PENDING') throw new Error('Booking not in PENDING state');
-    booking.status = 'PAID';
+    if (booking.status !== BookingStatusEnum.PENDING) throw new Error('Booking not in PENDING state');
+    booking.status = BookingStatusEnum.PAID;
     booking.paid_at = new Date();
     await this.bookingRepository.save(booking);
+
+    this.seatEventClient.emit('booking_paid', {
+      bookingId: booking.id,
+      userId: booking.user_id,
+      showtimeId: booking.showtime_id,
+      seatIds: booking.items.map(item => item.seat_id),
+    });
+
     return this.getBooking({ id: booking.id });
   }
 
   async cancelBooking(dto: CancelBookingDto): Promise<BookingResponseDto> {
     const booking = await this.bookingRepository.findOne({ where: { id: dto.id }, relations: ['items'] });
     if (!booking) throw new Error('Booking not found');
-    if (booking.status === 'CANCELED') throw new Error('Booking already canceled');
-    booking.status = 'CANCELED';
+    if (booking.status === BookingStatusEnum.CANCELED) throw new Error('Booking already canceled');
+    booking.status = BookingStatusEnum.CANCELED;
     await this.bookingRepository.save(booking);
+
+    this.seatEventClient.emit('booking_canceled', {
+      bookingId: booking.id,
+      userId: booking.user_id,
+      showtimeId: booking.showtime_id,
+      seatIds: booking.items.map(item => item.seat_id),
+    });
+
     return this.getBooking({ id: booking.id });
   }
 }

@@ -3,6 +3,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import { SeatsController } from './seats.controller';
 import { SeatsService } from './seats.service';
+import { ScheduledJobsService } from './scheduled-jobs.service';
 import { Seat } from './entities/seat.entity';
 import { SeatStatus } from './entities/seat-status.entity';
 import { RedisModule } from '@liaoliaots/nestjs-redis';
@@ -31,7 +32,7 @@ import { SeatConsumer } from './consumers/seat.consumer';
     }),
   ],
   controllers: [SeatsController, SeatConsumer],
-  providers: [SeatsService],
+  providers: [SeatsService, ScheduledJobsService],
   exports: [SeatsService],
 })
 export class SeatsModule {}

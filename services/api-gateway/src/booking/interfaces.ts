@@ -28,7 +28,16 @@ export interface ListBookingsRequest { userId: string; }
 export interface ListBookingsResponse { bookings: Booking[]; pagination: PaginationInfo; }
 export interface GetBookingRequest { id: string; }
 export interface GetBookingResponse { booking: Booking; }
-export interface CreateBookingRequest { userId: string; showtimeId: string; seatIds: string[]; }
+export interface SeatRequest {
+  id: string;
+  priceRatio: number;
+}
+
+export interface CreateBookingRequest {
+  userId: string;
+  showtimeId: string;
+  seats: SeatRequest[];
+}
 export interface CreateBookingResponse { booking: Booking; }
 export interface PayBookingRequest { id: string; }
 export interface PayBookingResponse { booking: Booking; }

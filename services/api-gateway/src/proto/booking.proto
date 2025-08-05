@@ -43,10 +43,15 @@ message GetBookingResponse {
   Booking booking = 1;
 }
 
+message Seat {
+  string id = 1;
+  double priceRatio = 2;
+}
+
 message CreateBookingRequest {
   string userId = 1;
   string showtimeId = 2;
-  repeated string seatIds = 3;
+  repeated Seat seats = 3;
 }
 
 message CreateBookingResponse {

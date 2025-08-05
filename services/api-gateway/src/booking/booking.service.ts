@@ -20,8 +20,8 @@ export class BookingsService implements OnModuleInit {
     return this.bookingService.getBooking({ id });
   }
 
-  async createBooking(user_id: string, showtime_id: string, seat_ids: string[]) {
-    return this.bookingService.createBooking({ userId: user_id, showtimeId: showtime_id, seatIds: seat_ids });
+  async createBooking(user_id: string, showtime_id: string, seats: { id: string; priceRatio: number }[]) {
+    return this.bookingService.createBooking({ userId: user_id, showtimeId: showtime_id, seats });
   }
 
   async payBooking(id: string) {

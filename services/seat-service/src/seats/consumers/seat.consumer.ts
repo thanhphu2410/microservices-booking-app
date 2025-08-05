@@ -37,4 +37,34 @@ export class SeatConsumer {
     const originalMsg = context.getMessage();
     channel.ack(originalMsg);
   }
+
+  @EventPattern('booking_paid')
+  async handleBookingPaid(@Payload() data: any, @Ctx() context: RmqContext) {
+    this.logger.log('Received event from booking service...', data);
+    const result = await this.seatsService.bookSeats(data);
+    if (result.success) {
+      this.logger.log('Seats booked successfully', result);
+    } else {
+      this.logger.error('Failed to book seats', result);
+    }
+    // Acknowledge message
+    const channel = context.getChannelRef();
+    const originalMsg = context.getMessage();
+    channel.ack(originalMsg);
+  }
+
+  @EventPattern('booking_canceled')
+  async handleBookingCanceled(@Payload() data: any, @Ctx() context: RmqContext) {
+    this.logger.log('Received event from booking service...', data);
+    const result = await this.seatsService.releaseSeats(data);
+    if (result.success) {
+      this.logger.log('Seats released successfully', result);
+    } else {
+      this.logger.error('Failed to release seats', result);
+    }
+    // Acknowledge message
+    const channel = context.getChannelRef();
+    const originalMsg = context.getMessage();
+    channel.ack(originalMsg);
+  }
 }
