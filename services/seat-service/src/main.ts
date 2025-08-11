@@ -3,6 +3,10 @@ import { MicroserviceOptions, Transport } from '@nestjs/microservices';
 import { join } from 'path';
 import { AppModule } from './app.module';
 import { RpcExceptionFilter } from './filters/rpc-exception.filter';
+import * as crypto from 'crypto';
+
+// Make crypto available globally for @nestjs/schedule
+(global as any).crypto = crypto;
 
 async function bootstrap() {
   // Create a hybrid application
