@@ -24,6 +24,17 @@ import { SeatConsumer } from './consumers/seat.consumer';
           },
         },
       },
+      {
+        name: 'BOOKING_EVENT_SERVICE',
+        transport: Transport.RMQ,
+        options: {
+          urls: [process.env.RABBITMQ_URL],
+          queue: 'booking_events_queue',
+          queueOptions: {
+            durable: true,
+          },
+        },
+      },
     ]),
     RedisModule.forRoot({
       config: {

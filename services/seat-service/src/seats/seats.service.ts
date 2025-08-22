@@ -29,6 +29,7 @@ export class SeatsService {
     private readonly seatStatusRepository: Repository<SeatStatus>,
     private readonly redisService: RedisService,
     @Inject('SEAT_EVENT_SERVICE') private readonly seatEventClient: ClientProxy,
+    @Inject('BOOKING_EVENT_SERVICE') private readonly bookingEventClient: ClientProxy,
   ) {
     this.redisClient = this.redisService.getOrThrow();
   }
@@ -100,7 +101,7 @@ export class SeatsService {
   }
 
   async holdSeats(data: HoldSeatsDto) {
-    const heldSeatIds: string[] = [];
+    const heldSeats: {id: string, priceRatio: number}[] = [];
     const failedSeatIds: string[] = [];
     const holdDuration = data.holdDurationMinutes || 5; // Default 5 minutes
 
@@ -177,7 +178,10 @@ export class SeatsService {
                 }
               );
             }
-            heldSeatIds.push(seatId);
+            heldSeats.push({
+              id: seatId,
+              priceRatio: seat.priceRatio,
+            });
           } else {
             // Seat is not available, release the lock
             await this.redisClient.del(lockKey);
@@ -192,11 +196,20 @@ export class SeatsService {
       }
     }
 
+    if (heldSeats.length > 0 && failedSeatIds.length === 0) {      
+      this.bookingEventClient.emit('seats_held', {
+        showtimeId: data.showtimeId,
+        seats: heldSeats,
+        userId: data.userId,
+      });
+    }
+    const heldSeatIds = heldSeats.map(seat => seat.id);
+
     return {
-      success: heldSeatIds.length > 0,
+      success: heldSeats.length > 0,
       heldSeatIds,
       failedSeatIds,
-      message: heldSeatIds.length > 0
+      message: heldSeats.length > 0
         ? `Successfully held ${heldSeatIds.length} seats`
         : 'Failed to hold any seats',
     };
@@ -243,11 +256,12 @@ export class SeatsService {
     }
 
     // Emit booking event
-    if (bookedSeatIds.length > 0) {
-      this.seatEventClient.emit('seats_booked', {
-        showtimeId: data.showtimeId,
-        seatIds: bookedSeatIds,
-        userId: data.userId,
+    if (failedSeatIds.length > 0) {
+      this.bookingEventClient.emit('seats_expired', {
+        bookingId: data.bookingId,
+      });
+    } else {
+      this.bookingEventClient.emit('seats_booked', {
         bookingId: data.bookingId,
       });
     }

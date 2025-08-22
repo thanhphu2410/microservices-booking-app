@@ -3,7 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Booking, BookingStatusEnum } from './entities/booking.entity';
 import { BookingItem } from './entities/booking-item.entity';
-import { ListBookingsResponseDto, BookingResponseDto, ListBookingsDto, GetBookingDto, CreateBookingDto, PayBookingDto, CancelBookingDto } from './dto/index';
+import { ListBookingsResponseDto, BookingResponseDto, ListBookingsDto, GetBookingDto, CreateBookingDto, PayBookingDto, CancelBookingDto, ConfirmBookingDto, ExpiredBookingDto, BookedBookingDto } from './dto/index';
 import { ClientProxy } from '@nestjs/microservices';
 
 @Injectable()
@@ -16,6 +16,7 @@ export class BookingsService {
     @InjectRepository(BookingItem)
     private readonly bookingItemRepository: Repository<BookingItem>,
     @Inject('SEAT_EVENT_SERVICE') private readonly seatEventClient: ClientProxy,
+    @Inject('BOOKING_EVENT_SERVICE') private readonly bookingEventClient: ClientProxy,
   ) {}
 
   async listBookings(dto: ListBookingsDto): Promise<ListBookingsResponseDto> {
@@ -43,6 +44,7 @@ export class BookingsService {
       status: booking.status,
       createdAt: booking.created_at.toISOString(),
       paidAt: booking.paid_at?.toISOString(),
+      confirmExpiredTime: booking.confirm_expired_time?.toISOString(),
       items: booking.items.map(item => ({
         id: item.id,
         seatId: item.seat_id,
@@ -77,6 +79,7 @@ export class BookingsService {
       status: booking.status,
       createdAt: booking.created_at.toISOString(),
       paidAt: booking.paid_at?.toISOString(),
+      confirmExpiredTime: booking.confirm_expired_time?.toISOString(),
       items: booking.items.map(item => ({
         id: item.id,
         seatId: item.seat_id,
@@ -129,15 +132,28 @@ export class BookingsService {
     }
   }
 
-  async payBooking(dto: PayBookingDto): Promise<BookingResponseDto> {
-    const booking = await this.bookingRepository.findOne({ where: { id: dto.id }, relations: ['items'] });
+  async payBooking(dto: PayBookingDto): Promise<any> {
+    this.bookingEventClient.emit('payment_succeeded', {
+      bookingId: dto.id,
+    });
+
+    return {
+      id: dto.id,
+      message: 'Payment succeeded',
+    }
+  }
+
+  async confirmBooking(dto: ConfirmBookingDto): Promise<BookingResponseDto> {
+    const booking = await this.bookingRepository.findOne({ where: { id: dto.bookingId }, relations: ['items'] });
     if (!booking) throw new Error('Booking not found');
     if (booking.status !== BookingStatusEnum.PENDING) throw new Error('Booking not in PENDING state');
     booking.status = BookingStatusEnum.PAID;
     booking.paid_at = new Date();
+    // Set expiration time to 1 minute from now
+    booking.confirm_expired_time = new Date(Date.now() + 60 * 1000);
     await this.bookingRepository.save(booking);
 
-    this.seatEventClient.emit('booking_paid', {
+    this.seatEventClient.emit('booking_confirmed', {
       bookingId: booking.id,
       userId: booking.user_id,
       showtimeId: booking.showtime_id,
@@ -152,6 +168,7 @@ export class BookingsService {
     if (!booking) throw new Error('Booking not found');
     if (booking.status === BookingStatusEnum.CANCELED) throw new Error('Booking already canceled');
     booking.status = BookingStatusEnum.CANCELED;
+    booking.confirm_expired_time = null; // Clear the expiration time
     await this.bookingRepository.save(booking);
 
     this.seatEventClient.emit('booking_canceled', {
@@ -161,6 +178,30 @@ export class BookingsService {
       seatIds: booking.items.map(item => item.seat_id),
     });
 
+    return this.getBooking({ id: booking.id });
+  }
+
+  async failedBooking(dto: ExpiredBookingDto): Promise<BookingResponseDto> {
+    const booking = await this.bookingRepository.findOne({ where: { id: dto.bookingId }, relations: ['items'] });
+    if (!booking) throw new Error('Booking not found');
+    if (booking.status === BookingStatusEnum.FAILED) throw new Error('Booking already failed');
+    booking.status = BookingStatusEnum.FAILED;
+    booking.confirm_expired_time = null; // Clear the expiration time
+    await this.bookingRepository.save(booking);
+
+    this.bookingEventClient.emit('booking_failed', {
+      bookingId: booking.id
+    });
+    return this.getBooking({ id: booking.id });
+  }
+
+  async bookedBooking(dto: BookedBookingDto): Promise<BookingResponseDto> {
+    const booking = await this.bookingRepository.findOne({ where: { id: dto.bookingId }, relations: ['items'] });
+    if (!booking) throw new Error('Booking not found');
+    if (booking.status === BookingStatusEnum.BOOKED) throw new Error('Booking already booked');
+    booking.status = BookingStatusEnum.BOOKED;
+    booking.confirm_expired_time = null; // Clear the expiration time
+    await this.bookingRepository.save(booking);
     return this.getBooking({ id: booking.id });
   }
 }

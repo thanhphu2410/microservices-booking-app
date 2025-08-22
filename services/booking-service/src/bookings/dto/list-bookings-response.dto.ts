@@ -12,6 +12,7 @@ export class BookingResponseDto {
   status: string;
   createdAt: string;
   paidAt?: string;
+  confirmExpiredTime?: string;
   items: BookingItem[];
 }
 
