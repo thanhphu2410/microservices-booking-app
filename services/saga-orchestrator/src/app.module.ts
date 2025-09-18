@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { BookingSagaConsumer } from './consumers/booking-saga.consumer';
-import { BookingSagaModule } from './booking-saga/booking-saga.module';
+import { SagaConsumer } from './consumers/saga.consumer';
+import { SagaModule } from './saga/saga.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
 @Module({
@@ -19,9 +19,9 @@ import { TypeOrmModule } from '@nestjs/typeorm';
       entities: [],
       synchronize: process.env.NODE_ENV !== 'production',
     }),
-    BookingSagaModule,
+    SagaModule,
   ],
-  controllers: [BookingSagaConsumer],
+  controllers: [SagaConsumer],
   providers: [],
 })
 export class AppModule {}

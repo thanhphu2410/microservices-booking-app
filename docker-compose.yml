@@ -66,6 +66,7 @@ services:
       - BOOKING_SERVICE_URL=booking-service:50055
       - RABBITMQ_URL=${RABBITMQ_URL}
       - JWT_SECRET=${JWT_SECRET}
+      - API_GATEWAY_URL=${API_GATEWAY_URL}
     networks:
       - test-network
     depends_on:

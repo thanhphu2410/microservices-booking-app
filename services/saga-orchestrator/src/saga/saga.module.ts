@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { BookingSagaService } from './booking-saga.service';
+import { SagaService } from './saga.service';
 import { ConfigModule } from '@nestjs/config';
 
 @Module({
@@ -9,7 +9,7 @@ import { ConfigModule } from '@nestjs/config';
     }),
   ],
   controllers: [],
-  providers: [BookingSagaService],
-  exports: [BookingSagaService],
+  providers: [SagaService],
+  exports: [SagaService],
 })
-export class BookingSagaModule {}
+export class SagaModule {}
