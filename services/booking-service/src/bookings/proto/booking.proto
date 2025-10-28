@@ -5,9 +5,6 @@ package booking;
 service BookingService {
   rpc ListBookings (ListBookingsRequest) returns (ListBookingsResponse);
   rpc GetBooking (GetBookingRequest) returns (GetBookingResponse);
-  rpc CreateBooking (CreateBookingRequest) returns (CreateBookingResponse);
-  rpc PayBooking (PayBookingRequest) returns (PayBookingResponse);
-  rpc CancelBooking (CancelBookingRequest) returns (CancelBookingResponse);
 }
 
 message Booking {
@@ -40,36 +37,5 @@ message GetBookingRequest {
 }
 
 message GetBookingResponse {
-  Booking booking = 1;
-}
-
-message Seat {
-  string id = 1;
-  double priceRatio = 2;
-}
-
-message CreateBookingRequest {
-  string userId = 1;
-  string showtimeId = 2;
-  repeated Seat seats = 3;
-}
-
-message CreateBookingResponse {
-  Booking booking = 1;
-}
-
-message PayBookingRequest {
-  string id = 1;
-}
-
-message PayBookingResponse {
-  Booking booking = 1;
-}
-
-message CancelBookingRequest {
-  string id = 1;
-}
-
-message CancelBookingResponse {
   Booking booking = 1;
 }

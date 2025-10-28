@@ -10,7 +10,7 @@ import { Transport } from '@nestjs/microservices';
         transport: Transport.RMQ,
         options: {
           urls: [process.env.RABBITMQ_URL],
-          queue: 'saga_orchestrator_queue',
+          queue: 'saga_events_queue',
           queueOptions: {
             durable: true
           }

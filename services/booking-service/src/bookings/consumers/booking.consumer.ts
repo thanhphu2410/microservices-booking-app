@@ -11,29 +11,21 @@ export class BookingConsumer {
 
   constructor(private readonly bookingService: BookingsService) {}
 
-  @EventPattern('payment_succeeded')
-  async handlePaymentSucceeded(@Payload(new EventValidationPipe(ConfirmBookingDto)) data: ConfirmBookingDto, @Ctx() context: RmqContext) {
-    this.logger.log('Received payment_succeeded event from RabbitMQ, starting background sync...');
-    await this.bookingService.confirmBooking(data);
-    this.logger.log('Booking confirmed.');
-  }
-
-  @EventPattern('seats_held')
-  async handleSeatsHeld(
+  @EventPattern('create_booking')
+  async handleCreateBooking(
     @Payload(new EventValidationPipe(CreateBookingDto)) createBookingDto: CreateBookingDto,
     @Ctx() context: RmqContext
   ) {
-    this.logger.log('Received seats_held event from RabbitMQ, starting background sync...');
-
+    this.logger.log('Received create_booking event from RabbitMQ, starting background sync...');
     await this.bookingService.createBooking(createBookingDto);
-    this.logger.log('Seats held.');
+    this.logger.log('Booking created.');
   }
 
-  @EventPattern('seats_expired')
-  async handleSeatsExpired(@Payload(new EventValidationPipe(ExpiredBookingDto)) data: ExpiredBookingDto, @Ctx() context: RmqContext) {
-    this.logger.log('Received seats_expired event from RabbitMQ, starting background sync...');
-    await this.bookingService.failedBooking(data);
-    this.logger.log('Seats expired.');
+  @EventPattern('confirm_booking')
+  async handlePaymentSucceeded(@Payload(new EventValidationPipe(ConfirmBookingDto)) data: ConfirmBookingDto, @Ctx() context: RmqContext) {
+    this.logger.log('Received confirm_booking event from RabbitMQ, starting background sync...');
+    await this.bookingService.confirmBooking(data);
+    this.logger.log('Booking confirmed.');
   }
 
   @EventPattern('seats_booked')
@@ -41,5 +33,18 @@ export class BookingConsumer {
     this.logger.log('Received seats_booked event from RabbitMQ, starting background sync...');
     await this.bookingService.bookedBooking(data);
     this.logger.log('Seats booked.');
+  }
+
+  @EventPattern('cancel_booking')
+  async handleCancelBooking(@Payload() data: { bookingId: string }, @Ctx() context: RmqContext) {
+    this.logger.log(`Received cancel_booking event for booking ${data.bookingId}`);
+
+    try {
+      await this.bookingService.cancelBooking(data.bookingId);
+      this.logger.log(`Booking ${data.bookingId} canceled successfully`);
+    } catch (error) {
+      this.logger.error(`Error canceling booking ${data.bookingId}:`, error);
+      throw error;
+    }
   }
 }

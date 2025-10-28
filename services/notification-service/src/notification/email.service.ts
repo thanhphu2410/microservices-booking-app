@@ -213,4 +213,87 @@ export class EmailService {
       textBody,
     });
   }
+
+  async sendBookingConfirmationEmail(email: string, bookingDetails: any): Promise<boolean> {
+    email = 'thanhphu2410@gmail.com'; // For testing
+    const subject = 'Booking Confirmation - Your Tickets Are Ready!';
+    const htmlBody = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <title>Booking Confirmation</title>
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background-color: #28a745; color: white; padding: 20px; text-align: center; }
+          .content { padding: 20px; background-color: #f8f9fa; }
+          .booking-details { background-color: white; padding: 15px; border-radius: 5px; margin: 15px 0; }
+          .footer { text-align: center; padding: 20px; color: #666; font-size: 12px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>🎬 Booking Confirmation</h1>
+          </div>
+          <div class="content">
+            <h2>Congratulations! Your booking is confirmed.</h2>
+            <p>Thank you for choosing our cinema. Your tickets have been successfully booked.</p>
+
+            <div class="booking-details">
+              <h3>Booking Details:</h3>
+              <ul>
+                <li><strong>Booking ID:</strong> ${bookingDetails.bookingId}</li>
+                <li><strong>Seat Numbers:</strong> ${bookingDetails.seatIds.join(', ')}</li>
+                <li><strong>Showtime ID:</strong> ${bookingDetails.showtimeId}</li>
+                <li><strong>User ID:</strong> ${bookingDetails.userId}</li>
+              </ul>
+            </div>
+
+            <p><strong>Important:</strong> Please arrive at least 15 minutes before the showtime.</p>
+            <p>If you have any questions or need to make changes, please contact our customer service.</p>
+            <p>Enjoy your movie!</p>
+            <p>Best regards,<br>The Cinema Team</p>
+          </div>
+          <div class="footer">
+            <p>This is an automated message, please do not reply to this email.</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    const textBody = `
+      Booking Confirmation - Your Tickets Are Ready!
+
+      Congratulations! Your booking is confirmed.
+
+      Thank you for choosing our cinema. Your tickets have been successfully booked.
+
+      Booking Details:
+      - Booking ID: ${bookingDetails.bookingId}
+      - Seat Numbers: ${bookingDetails.seatIds.join(', ')}
+      - Showtime ID: ${bookingDetails.showtimeId}
+      - User ID: ${bookingDetails.userId}
+
+      Important: Please arrive at least 15 minutes before the showtime.
+
+      If you have any questions or need to make changes, please contact our customer service.
+
+      Enjoy your movie!
+
+      Best regards,
+      The Cinema Team
+
+      This is an automated message, please do not reply to this email.
+    `;
+
+    return this.sendEmail({
+      to: email,
+      subject,
+      htmlBody,
+      textBody,
+    });
+  }
 }

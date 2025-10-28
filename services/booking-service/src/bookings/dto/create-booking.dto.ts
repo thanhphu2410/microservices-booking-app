@@ -18,6 +18,9 @@ export class CreateBookingDto {
   @IsUUID()
   showtimeId: string;
 
+  @IsUUID()
+  sagaId: string;
+
   @IsArray()
   @ArrayNotEmpty()
   @ValidateNested({ each: true })

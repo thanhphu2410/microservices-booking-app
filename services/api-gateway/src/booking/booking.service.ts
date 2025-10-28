@@ -1,6 +1,6 @@
 import { Injectable, Inject, OnModuleInit } from '@nestjs/common';
 import { ClientGrpc } from '@nestjs/microservices';
-import { BookingGrpcService, ListBookingsRequest, GetBookingRequest, CreateBookingRequest, PayBookingRequest, CancelBookingRequest, Booking, ListBookingsResponse, GetBookingResponse, CreateBookingResponse, PayBookingResponse, CancelBookingResponse } from './interfaces';
+import { BookingGrpcService } from './interfaces';
 
 @Injectable()
 export class BookingsService implements OnModuleInit {
@@ -18,17 +18,5 @@ export class BookingsService implements OnModuleInit {
 
   async getBooking(id: string) {
     return this.bookingService.getBooking({ id });
-  }
-
-  async createBooking(user_id: string, showtime_id: string, seats: { id: string; priceRatio: number }[]) {
-    return this.bookingService.createBooking({ userId: user_id, showtimeId: showtime_id, seats });
-  }
-
-  async payBooking(id: string) {
-    return this.bookingService.payBooking({ id });
-  }
-
-  async cancelBooking(id: string) {
-    return this.bookingService.cancelBooking({ id });
   }
 }

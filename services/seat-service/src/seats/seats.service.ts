@@ -30,6 +30,7 @@ export class SeatsService {
     private readonly redisService: RedisService,
     @Inject('SEAT_EVENT_SERVICE') private readonly seatEventClient: ClientProxy,
     @Inject('BOOKING_EVENT_SERVICE') private readonly bookingEventClient: ClientProxy,
+    @Inject('SAGA_ORCHESTRATOR') private readonly sagaEventClient: ClientProxy,
   ) {
     this.redisClient = this.redisService.getOrThrow();
   }
@@ -196,12 +197,19 @@ export class SeatsService {
       }
     }
 
-    if (heldSeats.length > 0 && failedSeatIds.length === 0) {      
-      this.bookingEventClient.emit('seats_held', {
-        showtimeId: data.showtimeId,
+    if (heldSeats.length > 0 && failedSeatIds.length === 0) {
+      const holdDuration = data.holdDurationMinutes || 5;
+
+      await this.sagaEventClient.emit('saga_seats_held', {
+        eventType: 'SAGA_SEATS_HELD',
         seats: heldSeats,
+        showtimeId: data.showtimeId,
         userId: data.userId,
-      });
+        holdExpiresAt: new Date(Date.now() + holdDuration * 60 * 1000).toISOString(),
+        timestamp: new Date().toISOString(),
+      }).toPromise();
+
+      this.logger.log(`Emitted saga_seats_held event for ${heldSeats.length} seats to saga orchestrator`);
     }
     const heldSeatIds = heldSeats.map(seat => seat.id);
 
@@ -255,15 +263,39 @@ export class SeatsService {
       }
     }
 
-    // Emit booking event
-    if (failedSeatIds.length > 0) {
-      this.bookingEventClient.emit('seats_expired', {
-        bookingId: data.bookingId,
-      });
-    } else {
-      this.bookingEventClient.emit('seats_booked', {
-        bookingId: data.bookingId,
-      });
+    // Emit seat confirmation event to saga orchestrator
+    try {
+      if (failedSeatIds.length > 0) {
+        await this.sagaEventClient.emit('saga_seat_confirmed', {
+          eventType: 'SAGA_SEAT_CONFIRMED',
+          bookingId: data.bookingId,
+          sagaId: data.sagaId,
+          seatIds: [],
+          showtimeId: data.showtimeId,
+          userId: data.userId,
+          success: false,
+          message: 'Failed to book seats',
+          timestamp: new Date().toISOString(),
+        }).toPromise();
+        this.logger.log(`Emitted saga_seat_confirmed failure event for booking ${data.bookingId}`);
+      } else {
+        await this.sagaEventClient.emit('saga_seat_confirmed', {
+          eventType: 'SAGA_SEAT_CONFIRMED',
+          bookingId: data.bookingId,
+          sagaId: data.sagaId,
+          seatIds: bookedSeatIds,
+          showtimeId: data.showtimeId,
+          userId: data.userId,
+          success: true,
+          message: 'Seats confirmed successfully',
+          timestamp: new Date().toISOString(),
+        }).toPromise();
+        this.logger.log(`Emitted saga_seat_confirmed success event for booking ${data.bookingId}`);
+      }
+    } catch (error) {
+      this.logger.error(`Failed to emit saga_seat_confirmed event for booking ${data.bookingId}:`, error);
+      // Don't throw error here as seats are already booked/released
+      // The saga orchestrator will handle the timeout scenario
     }
 
     return {

@@ -9,6 +9,7 @@ import { ClientProxy } from '@nestjs/microservices';
 @Injectable()
 export class BookingsService {
   private readonly logger = new Logger(BookingsService.name);
+  private readonly confirmExpiredTime = 5 * 60 * 1000;
 
   constructor(
     @InjectRepository(Booking)
@@ -17,6 +18,7 @@ export class BookingsService {
     private readonly bookingItemRepository: Repository<BookingItem>,
     @Inject('SEAT_EVENT_SERVICE') private readonly seatEventClient: ClientProxy,
     @Inject('BOOKING_EVENT_SERVICE') private readonly bookingEventClient: ClientProxy,
+    @Inject('SAGA_ORCHESTRATOR') private readonly sagaClient: ClientProxy,
   ) {}
 
   async listBookings(dto: ListBookingsDto): Promise<ListBookingsResponseDto> {
@@ -89,24 +91,9 @@ export class BookingsService {
   }
 
   async createBooking(dto: CreateBookingDto): Promise<BookingResponseDto> {
-    // Check if any of the requested seats are already booked for this showtime
     try {
-      const bookedSeats = await this.bookingItemRepository
-      .createQueryBuilder('item')
-      .innerJoin('item.booking', 'booking')
-      .where('item.seat_id IN (:...seatIds)', { seatIds: dto.seats.map(seat => seat.id) })
-      .andWhere('booking.showtime_id = :showtimeId', { showtimeId: dto.showtimeId })
-      .andWhere('booking.status != :cancelled', { cancelled: BookingStatusEnum.CANCELED })
-      .getMany();
-
-
-      if (bookedSeats.length > 0) {
-        throw new Error(`Some seats are already booked: ${bookedSeats.map(s => s.seat_id).join(', ')}`);
-      }
-      // Base price for seats, in real app this could come from seat-service or showtime configuration
       const basePrice = 12;
 
-      // Calculate total amount based on seat price ratios
       const totalAmount = dto.seats.reduce((total, seat) => {
         const seatPrice = basePrice * seat.priceRatio;
         return total + seatPrice;
@@ -117,6 +104,7 @@ export class BookingsService {
         showtime_id: dto.showtimeId,
         total_amount: totalAmount,
         status: BookingStatusEnum.PENDING,
+        confirm_expired_time: new Date(Date.now() + this.confirmExpiredTime),
         items: dto.seats.map(seat => {
           const seatPrice = basePrice * seat.priceRatio;
           return this.bookingItemRepository.create({
@@ -126,20 +114,25 @@ export class BookingsService {
         }),
       });
       const saved = await this.bookingRepository.save(booking);
+
+      // Emit booking created event to saga orchestrator
+      await this.sagaClient.emit('saga_booking_created', {
+        eventType: 'SAGA_BOOKING_CREATED',
+        bookingId: saved.id,
+        sagaId: dto.sagaId,
+        userId: dto.userId,
+        seatIds: dto.seats.map(seat => seat.id),
+        showtimeId: dto.showtimeId,
+        totalAmount: totalAmount,
+        timestamp: new Date().toISOString(),
+      }).toPromise();
+
+      this.logger.log(`Emitted saga_booking_created event for booking ${saved.id} to saga orchestrator`);
+
       return this.getBooking({ id: saved.id });
     } catch (error) {
       this.logger.error(`CreateBooking failed: ${error.message}`);
-    }
-  }
-
-  async payBooking(dto: PayBookingDto): Promise<any> {
-    this.bookingEventClient.emit('payment_succeeded', {
-      bookingId: dto.id,
-    });
-
-    return {
-      id: dto.id,
-      message: 'Payment succeeded',
+      throw error;
     }
   }
 
@@ -150,48 +143,24 @@ export class BookingsService {
     booking.status = BookingStatusEnum.PAID;
     booking.paid_at = new Date();
     // Set expiration time to 1 minute from now
-    booking.confirm_expired_time = new Date(Date.now() + 60 * 1000);
+    booking.confirm_expired_time = new Date(Date.now() + this.confirmExpiredTime);
     await this.bookingRepository.save(booking);
 
-    this.seatEventClient.emit('booking_confirmed', {
+    // Emit booking_confirmed event to saga orchestrator
+    await this.sagaClient.emit('saga_booking_confirmed', {
+      eventType: 'SAGA_BOOKING_CONFIRMED',
       bookingId: booking.id,
-      userId: booking.user_id,
-      showtimeId: booking.showtime_id,
+      sagaId: dto.sagaId,
+      success: true,
+      message: 'Booking confirmed successfully',
       seatIds: booking.items.map(item => item.seat_id),
-    });
-
-    return this.getBooking({ id: booking.id });
-  }
-
-  async cancelBooking(dto: CancelBookingDto): Promise<BookingResponseDto> {
-    const booking = await this.bookingRepository.findOne({ where: { id: dto.id }, relations: ['items'] });
-    if (!booking) throw new Error('Booking not found');
-    if (booking.status === BookingStatusEnum.CANCELED) throw new Error('Booking already canceled');
-    booking.status = BookingStatusEnum.CANCELED;
-    booking.confirm_expired_time = null; // Clear the expiration time
-    await this.bookingRepository.save(booking);
-
-    this.seatEventClient.emit('booking_canceled', {
-      bookingId: booking.id,
-      userId: booking.user_id,
       showtimeId: booking.showtime_id,
-      seatIds: booking.items.map(item => item.seat_id),
-    });
+      userId: booking.user_id,
+      timestamp: new Date().toISOString(),
+    }).toPromise();
 
-    return this.getBooking({ id: booking.id });
-  }
+    this.logger.log(`Emitted saga_booking_confirmed event for booking ${booking.id} to saga orchestrator`);
 
-  async failedBooking(dto: ExpiredBookingDto): Promise<BookingResponseDto> {
-    const booking = await this.bookingRepository.findOne({ where: { id: dto.bookingId }, relations: ['items'] });
-    if (!booking) throw new Error('Booking not found');
-    if (booking.status === BookingStatusEnum.FAILED) throw new Error('Booking already failed');
-    booking.status = BookingStatusEnum.FAILED;
-    booking.confirm_expired_time = null; // Clear the expiration time
-    await this.bookingRepository.save(booking);
-
-    this.bookingEventClient.emit('booking_failed', {
-      bookingId: booking.id
-    });
     return this.getBooking({ id: booking.id });
   }
 
@@ -202,6 +171,42 @@ export class BookingsService {
     booking.status = BookingStatusEnum.BOOKED;
     booking.confirm_expired_time = null; // Clear the expiration time
     await this.bookingRepository.save(booking);
+
+    // Emit booking_booked event to saga orchestrator
+    await this.sagaClient.emit('saga_booking_booked', {
+      eventType: 'SAGA_BOOKING_BOOKED',
+      bookingId: booking.id,
+      sagaId: dto.sagaId,
+      userId: dto.userId || booking.user_id,
+      seatIds: dto.seatIds || booking.items.map(item => item.seat_id),
+      showtimeId: dto.showtimeId || booking.showtime_id,
+      timestamp: new Date().toISOString(),
+    }).toPromise();
+
+    this.logger.log(`Emitted saga_booking_booked event for booking ${booking.id} to saga orchestrator`);
+
     return this.getBooking({ id: booking.id });
+  }
+
+  async cancelBooking(bookingId: string): Promise<void> {
+    this.logger.log(`Canceling booking ${bookingId}`);
+
+    const booking = await this.bookingRepository.findOne({ where: { id: bookingId } });
+    if (!booking) {
+      this.logger.warn(`Booking ${bookingId} not found for cancellation`);
+      return;
+    }
+
+    if (booking.status === BookingStatusEnum.FAILED || booking.status === BookingStatusEnum.CANCELED) {
+      this.logger.warn(`Booking ${bookingId} is already canceled or failed`);
+      return;
+    }
+
+    // Update booking status to FAILED (representing cancellation)
+    booking.status = BookingStatusEnum.FAILED;
+    booking.confirm_expired_time = null;
+    await this.bookingRepository.save(booking);
+
+    this.logger.log(`Booking ${bookingId} canceled successfully`);
   }
 }

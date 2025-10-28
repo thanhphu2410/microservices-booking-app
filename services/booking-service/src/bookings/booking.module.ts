@@ -37,6 +37,17 @@ import { BookingConsumer } from './consumers/booking.consumer';
           },
         },
       },
+      {
+        name: 'SAGA_ORCHESTRATOR',
+        transport: Transport.RMQ,
+        options: {
+          urls: [process.env.RABBITMQ_URL],
+          queue: 'saga_events_queue',
+          queueOptions: {
+            durable: true,
+          },
+        },
+      },
     ]),
     RedisModule.forRoot({
       config: {

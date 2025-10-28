@@ -11,6 +11,16 @@ interface UserRegisteredMessage {
   timestamp: string;
 }
 
+interface BookingCompleteMessage {
+  eventType: 'BOOKING_COMPLETE';
+  bookingId: string;
+  sagaId: string;
+  userId: string;
+  seatIds: string[];
+  showtimeId: string;
+  timestamp: string;
+}
+
 @Controller()
 export class UserConsumer {
   private readonly logger = new Logger(UserConsumer.name);
@@ -41,6 +51,47 @@ export class UserConsumer {
       // - etc.
     } catch (error) {
       this.logger.error('Error handling user_registered event:', error);
+      throw error;
+    }
+  }
+
+  @EventPattern('booking_complete')
+  async handleBookingComplete(@Payload() data: BookingCompleteMessage) {
+    try {
+      this.logger.log('Received booking_complete event');
+      this.logger.log('Booking details:', {
+        bookingId: data.bookingId,
+        sagaId: data.sagaId,
+        userId: data.userId,
+        seatIds: data.seatIds,
+        showtimeId: data.showtimeId,
+        completedAt: data.timestamp
+      });
+
+      // TODO: Get user email from user service
+      // For now, we'll use a placeholder email
+      const userEmail = `user-${data.userId}@example.com`;
+
+      // Send booking confirmation email
+      await this.emailService.sendBookingConfirmationEmail(
+        userEmail,
+        {
+          bookingId: data.bookingId,
+          seatIds: data.seatIds,
+          showtimeId: data.showtimeId,
+          userId: data.userId
+        }
+      );
+
+      this.logger.log(`Booking confirmation email sent successfully for booking ${data.bookingId}`);
+
+      // Here you could add more handling logic like:
+      // - Send SMS notification
+      // - Update analytics
+      // - Send push notification
+      // - etc.
+    } catch (error) {
+      this.logger.error('Error handling booking_complete event:', error);
       throw error;
     }
   }

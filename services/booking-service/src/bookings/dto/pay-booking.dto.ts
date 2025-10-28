@@ -8,6 +8,9 @@ export class PayBookingDto {
 export class ConfirmBookingDto {
   @IsUUID()
   bookingId: string;
+
+  @IsUUID()
+  sagaId: string;
 }
 export class ExpiredBookingDto {
   @IsUUID()
@@ -17,4 +20,13 @@ export class ExpiredBookingDto {
 export class BookedBookingDto {
   @IsUUID()
   bookingId: string;
+
+  @IsUUID()
+  sagaId: string;
+
+  userId?: string;
+
+  seatIds?: string[];
+
+  showtimeId?: string;
 }

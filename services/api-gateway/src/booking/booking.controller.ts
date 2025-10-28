@@ -17,20 +17,4 @@ export class BookingsController {
   async getBooking(@Param('id') id: string) {
     return this.bookingsService.getBooking(id);
   }
-
-  @Post()
-  async createBooking(@Request() req, @Body() body: { showtime_id: string; seats: { id: string; priceRatio: number }[] }) {
-    const user_id = req.user.id;
-    return this.bookingsService.createBooking(user_id, body.showtime_id, body.seats);
-  }
-
-  @Post(':id/pay')
-  async payBooking(@Param('id') id: string) {
-    return this.bookingsService.payBooking(id);
-  }
-
-  @Post(':id/cancel')
-  async cancelBooking(@Param('id') id: string) {
-    return this.bookingsService.cancelBooking(id);
-  }
 }

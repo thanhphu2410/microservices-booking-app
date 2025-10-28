@@ -1,7 +1,7 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, LessThan } from 'typeorm';
+import { Repository, LessThan, In } from 'typeorm';
 import { Booking, BookingStatusEnum } from './entities/booking.entity';
 import { ClientProxy } from '@nestjs/microservices';
 
@@ -12,8 +12,7 @@ export class BookingTimeoutService {
   constructor(
     @InjectRepository(Booking)
     private readonly bookingRepository: Repository<Booking>,
-    @Inject('SEAT_EVENT_SERVICE') private readonly seatEventClient: ClientProxy,
-    @Inject('BOOKING_EVENT_SERVICE') private readonly bookingEventClient: ClientProxy,
+    @Inject('SAGA_ORCHESTRATOR') private readonly sagaClient: ClientProxy,
   ) {}
 
   @Cron(CronExpression.EVERY_30_SECONDS)
@@ -24,7 +23,7 @@ export class BookingTimeoutService {
       // Find all PAID bookings that have expired
       const expiredBookings = await this.bookingRepository.find({
         where: {
-          status: BookingStatusEnum.PAID,
+          status: In([BookingStatusEnum.PAID, BookingStatusEnum.PENDING]),
           confirm_expired_time: LessThan(now),
         },
         relations: ['items'],
@@ -50,22 +49,14 @@ export class BookingTimeoutService {
       booking.status = BookingStatusEnum.FAILED;
       await this.bookingRepository.save(booking);
 
-      // Emit booking_failed event
-      this.bookingEventClient.emit('booking_failed', {
+      // Emit booking_failed event to saga orchestrator
+      await this.sagaClient.emit('booking_failed', {
         bookingId: booking.id,
         reason: 'Seat confirmation timeout',
-      });
+        timestamp: new Date().toISOString(),
+      }).toPromise();
 
-      // Emit seat release event to free up the seats
-      this.seatEventClient.emit('booking_failed', {
-        bookingId: booking.id,
-        userId: booking.user_id,
-        showtimeId: booking.showtime_id,
-        seatIds: booking.items.map(item => item.seat_id),
-        reason: 'Seat confirmation timeout',
-      });
-
-      this.logger.log(`Booking ${booking.id} marked as failed due to timeout`);
+      this.logger.log(`Emitted booking_failed event to saga orchestrator for booking ${booking.id}`);
     } catch (error) {
       this.logger.error(`Error handling expired booking ${booking.id}: ${error.message}`);
     }

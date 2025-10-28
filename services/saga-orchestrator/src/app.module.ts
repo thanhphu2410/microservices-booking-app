@@ -3,6 +3,8 @@ import { ConfigModule } from '@nestjs/config';
 import { SagaConsumer } from './consumers/saga.consumer';
 import { SagaModule } from './saga/saga.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { SagaInstance } from './saga/entities/saga-instance.entity';
+import { SagaStep } from './saga/entities/saga-step.entity';
 
 @Module({
   imports: [
@@ -16,7 +18,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
       username: process.env.DB_USERNAME,
       password: process.env.DB_PASSWORD,
       database: process.env.DB_NAME,
-      entities: [],
+      entities: [SagaInstance, SagaStep],
       synchronize: process.env.NODE_ENV !== 'production',
     }),
     SagaModule,

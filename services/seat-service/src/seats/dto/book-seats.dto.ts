@@ -13,4 +13,7 @@ export class BookSeatsDto {
 
   @IsString()
   bookingId: string;
+
+  @IsString()
+  sagaId: string;
 }

@@ -24,12 +24,6 @@ export class PaymentService {
 
     if (isSuccess) {
       const transactionId = `TXN${Date.now()}`;
-      const paymentResponse = {
-        status: 'success' as const,
-        bookingId,
-        transactionId,
-        message: 'Thanh toán thành công (mock)',
-      };
 
       // Send webhook callback for successful payment
       try {
@@ -44,39 +38,28 @@ export class PaymentService {
         // Don't fail the payment if callback fails
       }
 
-      // Send payment success event to saga orchestrator
+      return {
+        status: 'success' as const,
+        bookingId,
+        transactionId,
+        message: 'Thanh toán thành công (mock)',
+      };
+    } else {
+      // Payment failed - send callback for failed payment
       try {
-        await this.sendPaymentEvent({
-          eventType: 'PAYMENT_SUCCESS',
+        await this.sendPaymentCallback({
           bookingId,
-          transactionId,
+          transactionId: undefined,
+          status: 'failed',
           amount,
-          timestamp: new Date().toISOString(),
         });
       } catch (error) {
-        console.error('Failed to send payment success event to saga:', error);
-        // Don't fail the payment if event sending fails
-      }
-
-      return paymentResponse;
-    } else {
-      // Send payment failed event to saga orchestrator
-      try {
-        const failedEvent: PaymentFailedEvent = {
-          eventType: 'PAYMENT_FAILED',
-          bookingId,
-          amount,
-          timestamp: new Date().toISOString(),
-          reason: 'Payment processing failed (mock)',
-        };
-        await this.sendPaymentEvent(failedEvent);
-      } catch (error) {
-        console.error('Failed to send payment failed event to saga:', error);
-        // Don't fail the payment if event sending fails
+        console.error('Failed to send payment callback:', error);
+        // Don't fail the payment if callback fails
       }
 
       return {
-        status: 'failed',
+        status: 'failed' as const,
         bookingId,
         message: 'Thanh toán thất bại (mock)',
       };
@@ -90,8 +73,8 @@ export class PaymentService {
    */
   private async sendPaymentCallback(callbackData: PaymentCallbackRequest): Promise<void> {
     try {
-      // Get the base URL from environment or use localhost for development
-      const baseUrl = process.env.API_GATEWAY_URL || 'http://localhost:3000';
+      // Use internal container hostname for Docker network communication
+      const baseUrl = 'http://api-gateway:3000';
       const callbackUrl = `${baseUrl}/payment/callback`;
 
       console.log('Sending payment callback to:', callbackUrl);
