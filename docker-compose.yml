@@ -212,6 +212,8 @@ services:
     build:
       context: ./services/booking-service
       dockerfile: Dockerfile
+      args:
+        - BUILDKIT_INLINE_CACHE=1
     ports:
       - "50055:50055"
     volumes:

@@ -1,6 +1,7 @@
-import { Controller, Post, Body, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Post, Body, HttpCode, HttpStatus, UseInterceptors } from '@nestjs/common';
 import { PaymentService } from './payment.service';
 import { PaymentRequest, PaymentResponse, PaymentCallbackRequest } from './interfaces';
+import { IdempotencyInterceptor } from '../common/interceptors/idempotency.interceptor';
 
 @Controller('payment')
 export class PaymentController {
@@ -12,6 +13,7 @@ export class PaymentController {
    */
   @Post('pay')
   @HttpCode(HttpStatus.OK)
+  @UseInterceptors(IdempotencyInterceptor)
   async processPayment(@Body() paymentRequest: PaymentRequest): Promise<PaymentResponse> {
     return this.paymentService.processPayment(paymentRequest);
   }

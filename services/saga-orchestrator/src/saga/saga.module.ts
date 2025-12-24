@@ -12,13 +12,15 @@ import { BookingCreatedActionHandler } from './actions/booking-created.action.ha
 import { SeatConfirmedActionHandler } from './actions/seat-confirmed.action.handler';
 import { SeatsHeldActionHandler } from './actions/seats-held.action.handler';
 import { BookingBookedActionHandler } from './actions/booking-booked.action.handler';
+import { IdempotencyRecordEntity } from './idempotency/idempotency-record.entity';
+import { IdempotencyService } from './idempotency/idempotency.service';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
     }),
-    TypeOrmModule.forFeature([SagaInstance, SagaStep]),
+    TypeOrmModule.forFeature([SagaInstance, SagaStep, IdempotencyRecordEntity]),
     ClientsModule.register([
       {
         name: 'BOOKING_SERVICE',
@@ -58,6 +60,7 @@ import { BookingBookedActionHandler } from './actions/booking-booked.action.hand
   controllers: [],
   providers: [
     SagaService,
+    IdempotencyService,
     PaymentSuccessActionHandler,
     PaymentFailedActionHandler,
     BookingConfirmedActionHandler,

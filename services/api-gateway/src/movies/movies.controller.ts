@@ -1,7 +1,8 @@
-import { Controller, Get, Post, Body, Query, Param, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Query, Param, UseGuards, UseInterceptors } from '@nestjs/common';
 import { MoviesService } from './movies.service';
 import { ListMoviesResponse, SyncDataResponse, ListMoviesRequest, GetMovieShowtimesRequest, GetMovieShowtimesResponse, ListRoomsResponse } from './interfaces';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { IdempotencyInterceptor } from '../common/interceptors/idempotency.interceptor';
 
 @Controller('movies')
 @UseGuards(JwtAuthGuard)
@@ -16,6 +17,7 @@ export class MoviesController {
   }
 
   @Post('/sync-data')
+  @UseInterceptors(IdempotencyInterceptor)
   async syncData(): Promise<SyncDataResponse> {
     return this.moviesService.syncData();
   }

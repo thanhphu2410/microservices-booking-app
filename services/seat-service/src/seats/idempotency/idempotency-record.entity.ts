@@ -1,0 +1,35 @@
+import { Column, CreateDateColumn, Entity, Index, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm';
+
+export type IdempotencyStatus = 'in_progress' | 'succeeded' | 'failed';
+
+@Entity({ name: 'idempotency_records' })
+@Index(['scope', 'key'], { unique: true })
+export class IdempotencyRecordEntity {
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
+
+  @Column({ type: 'varchar', length: 200 })
+  scope: string; // logical handler scope, e.g., SAGA:BookingConfirmed, HTTP:POST:/seats/hold
+
+  @Column({ type: 'varchar', length: 200 })
+  key: string; // unique key per logical operation, e.g., sagaId or Idempotency-Key
+
+  @Column({ type: 'varchar', length: 20 })
+  status: IdempotencyStatus;
+
+  @Column({ type: 'jsonb', nullable: true })
+  responseJson?: any;
+
+  @Column({ type: 'jsonb', nullable: true })
+  errorJson?: any;
+
+  @Column({ type: 'timestamptz', nullable: true })
+  expiresAt?: Date;
+
+  @CreateDateColumn({ type: 'timestamptz' })
+  createdAt: Date;
+
+  @UpdateDateColumn({ type: 'timestamptz' })
+  updatedAt: Date;
+}
+

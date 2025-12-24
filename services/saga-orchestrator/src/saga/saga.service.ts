@@ -12,6 +12,7 @@ import { SeatsHeldActionHandler } from './actions/seats-held.action.handler';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { SagaInstance, SagaStatus } from './entities/saga-instance.entity';
+import { IdempotencyService } from './idempotency/idempotency.service';
 import { SagaStep, StepStatus } from './entities/saga-step.entity';
 
 @Injectable()
@@ -26,6 +27,7 @@ export class SagaService {
     private readonly seatConfirmedHandler: SeatConfirmedActionHandler,
     private readonly seatsHeldHandler: SeatsHeldActionHandler,
     private readonly bookingBookedHandler: BookingBookedActionHandler,
+    private readonly idempotencyService: IdempotencyService,
     @InjectRepository(SagaInstance)
     private readonly sagaInstanceRepository: Repository<SagaInstance>,
     @InjectRepository(SagaStep)
@@ -57,7 +59,17 @@ export class SagaService {
    */
   async handleBookingCreated(event: BookingCreatedEvent): Promise<void> {
     this.logger.log(`Handling booking created event for booking ${event.bookingId} in saga ${event.sagaId}`);
-    await this.bookingCreatedHandler.handle(event);
+    const scope = 'SAGA:BookingCreated';
+    const key = event.sagaId;
+    const { status } = await this.idempotencyService.begin(scope, key);
+    if (status === 'succeeded' || status === 'failed') return;
+    try {
+      await this.bookingCreatedHandler.handle(event);
+      await this.idempotencyService.succeed(scope, key, { ok: true });
+    } catch (error) {
+      await this.idempotencyService.fail(scope, key, { message: error?.message });
+      throw error;
+    }
   }
 
   /**
@@ -66,7 +78,17 @@ export class SagaService {
    */
   async handleBookingConfirmed(event: BookingConfirmedEvent): Promise<void> {
     this.logger.log(`Handling booking confirmed event for booking ${event.bookingId} in saga ${event.sagaId}`);
-    await this.bookingConfirmedHandler.handle(event);
+    const scope = 'SAGA:BookingConfirmed';
+    const key = event.sagaId;
+    const { status } = await this.idempotencyService.begin(scope, key);
+    if (status === 'succeeded' || status === 'failed') return;
+    try {
+      await this.bookingConfirmedHandler.handle(event);
+      await this.idempotencyService.succeed(scope, key, { ok: true });
+    } catch (error) {
+      await this.idempotencyService.fail(scope, key, { message: error?.message });
+      throw error;
+    }
   }
 
   /**
@@ -75,17 +97,47 @@ export class SagaService {
    */
   async handleSeatConfirmed(event: SeatConfirmedEvent): Promise<void> {
     this.logger.log(`Handling seat confirmed event for booking ${event.bookingId} in saga ${event.sagaId}`);
-    await this.seatConfirmedHandler.handle(event);
+    const scope = 'SAGA:SeatConfirmed';
+    const key = event.sagaId;
+    const { status } = await this.idempotencyService.begin(scope, key);
+    if (status === 'succeeded' || status === 'failed') return;
+    try {
+      await this.seatConfirmedHandler.handle(event);
+      await this.idempotencyService.succeed(scope, key, { ok: true });
+    } catch (error) {
+      await this.idempotencyService.fail(scope, key, { message: error?.message });
+      throw error;
+    }
   }
 
   async handleSeatsHeld(event: SeatsHeldEvent): Promise<void> {
     this.logger.log(`Handling seats held event for showtime ${event.showtimeId} by user ${event.userId}`);
-    await this.seatsHeldHandler.handle(event);
+    const scope = 'SAGA:SeatsHeld';
+    const key = event.bookingId || `${event.userId}:${event.showtimeId}:${event.timestamp}`;
+    const { status } = await this.idempotencyService.begin(scope, key);
+    if (status === 'succeeded' || status === 'failed') return;
+    try {
+      await this.seatsHeldHandler.handle(event);
+      await this.idempotencyService.succeed(scope, key, { ok: true });
+    } catch (error) {
+      await this.idempotencyService.fail(scope, key, { message: error?.message });
+      throw error;
+    }
   }
 
   async handleBookingBooked(event: BookingBookedEvent): Promise<void> {
     this.logger.log(`Handling booking booked event for booking ${event.bookingId} in saga ${event.sagaId}`);
-    await this.bookingBookedHandler.handle(event);
+    const scope = 'SAGA:BookingBooked';
+    const key = event.sagaId;
+    const { status } = await this.idempotencyService.begin(scope, key);
+    if (status === 'succeeded' || status === 'failed') return;
+    try {
+      await this.bookingBookedHandler.handle(event);
+      await this.idempotencyService.succeed(scope, key, { ok: true });
+    } catch (error) {
+      await this.idempotencyService.fail(scope, key, { message: error?.message });
+      throw error;
+    }
   }
 
   /**

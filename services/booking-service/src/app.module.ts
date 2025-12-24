@@ -5,6 +5,7 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { BookingsModule } from './bookings/booking.module';
 import { Booking } from './bookings/entities/booking.entity';
 import { BookingItem } from './bookings/entities/booking-item.entity';
+import { IdempotencyRecordEntity } from './bookings/idempotency/idempotency-record.entity';
 
 @Module({
   imports: [
@@ -19,7 +20,7 @@ import { BookingItem } from './bookings/entities/booking-item.entity';
       username: process.env.DB_USERNAME,
       password: process.env.DB_PASSWORD,
       database: process.env.DB_NAME,
-      entities: [Booking, BookingItem],
+      entities: [Booking, BookingItem, IdempotencyRecordEntity],
       synchronize: process.env.NODE_ENV !== 'production',
     }),
     BookingsModule,

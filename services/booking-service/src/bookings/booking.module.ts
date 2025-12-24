@@ -9,11 +9,13 @@ import { BookingTimeoutService } from './booking-timeout.service';
 import { Booking } from './entities/booking.entity';
 import { BookingItem } from './entities/booking-item.entity';
 import { BookingConsumer } from './consumers/booking.consumer';
+import { IdempotencyRecordEntity } from './idempotency/idempotency-record.entity';
+import { IdempotencyService } from './idempotency/idempotency.service';
 
 @Module({
   imports: [
     ScheduleModule.forRoot(),
-    TypeOrmModule.forFeature([Booking, BookingItem]),
+    TypeOrmModule.forFeature([Booking, BookingItem, IdempotencyRecordEntity]),
     ClientsModule.register([
       {
         name: 'BOOKING_EVENT_SERVICE',
@@ -56,7 +58,7 @@ import { BookingConsumer } from './consumers/booking.consumer';
     }),
   ],
   controllers: [BookingsController, BookingConsumer],
-  providers: [BookingsService, BookingTimeoutService],
+  providers: [BookingsService, BookingTimeoutService, IdempotencyService],
   exports: [BookingsService],
 })
 export class BookingsModule {}

@@ -8,10 +8,12 @@ import { Seat } from './entities/seat.entity';
 import { SeatStatus } from './entities/seat-status.entity';
 import { RedisModule } from '@liaoliaots/nestjs-redis';
 import { SeatConsumer } from './consumers/seat.consumer';
+import { IdempotencyRecordEntity } from './idempotency/idempotency-record.entity';
+import { IdempotencyService } from './idempotency/idempotency.service';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Seat, SeatStatus]),
+    TypeOrmModule.forFeature([Seat, SeatStatus, IdempotencyRecordEntity]),
     ClientsModule.register([
       {
         name: 'SEAT_EVENT_SERVICE',
@@ -54,7 +56,7 @@ import { SeatConsumer } from './consumers/seat.consumer';
     }),
   ],
   controllers: [SeatsController, SeatConsumer],
-  providers: [SeatsService, ScheduledJobsService],
+  providers: [SeatsService, ScheduledJobsService, IdempotencyService],
   exports: [SeatsService],
 })
 export class SeatsModule {}
