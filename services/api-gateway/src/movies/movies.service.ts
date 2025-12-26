@@ -1,9 +1,11 @@
-import { Injectable, Inject, OnModuleInit } from '@nestjs/common';
+import { Injectable, Inject, OnModuleInit, Logger } from '@nestjs/common';
 import { ClientGrpc } from '@nestjs/microservices';
 import { MovieGrpcService, ListMoviesResponse, SyncDataResponse, ListMoviesRequest, GetMovieShowtimesRequest, GetMovieShowtimesResponse, ListRoomsResponse, RoomGrpcService } from './interfaces';
+import { RetryUtil } from '../common/utils/retry.util';
 
 @Injectable()
 export class MoviesService implements OnModuleInit {
+  private readonly logger = new Logger(MoviesService.name);
   private movieService: MovieGrpcService;
   private roomService: RoomGrpcService;
 
@@ -15,18 +17,46 @@ export class MoviesService implements OnModuleInit {
   }
 
   async listMovies(params: ListMoviesRequest = {}): Promise<ListMoviesResponse> {
-    return this.movieService.listMovies(params);
+    return RetryUtil.retryWithBackoff(
+      () => this.movieService.listMovies(params),
+      {
+        maxAttempts: 3,
+        initialDelayMs: 1000,
+        maxDelayMs: 10000,
+      },
+    );
   }
 
   async syncData(): Promise<SyncDataResponse> {
-    return this.movieService.syncData({});
+    return RetryUtil.retryWithBackoff(
+      () => this.movieService.syncData({}),
+      {
+        maxAttempts: 3,
+        initialDelayMs: 1000,
+        maxDelayMs: 10000,
+      },
+    );
   }
 
   async getMovieShowtimes(params: GetMovieShowtimesRequest): Promise<GetMovieShowtimesResponse> {
-    return this.movieService.getMovieShowtimes(params);
+    return RetryUtil.retryWithBackoff(
+      () => this.movieService.getMovieShowtimes(params),
+      {
+        maxAttempts: 3,
+        initialDelayMs: 1000,
+        maxDelayMs: 10000,
+      },
+    );
   }
 
   async listRooms(): Promise<ListRoomsResponse> {
-    return this.roomService.getAllRooms({});
+    return RetryUtil.retryWithBackoff(
+      () => this.roomService.getAllRooms({}),
+      {
+        maxAttempts: 3,
+        initialDelayMs: 1000,
+        maxDelayMs: 10000,
+      },
+    );
   }
 }
